@@ -7,38 +7,6 @@
 #define debug_print(fmt, ...) \
             do { if (DEBUG) printf(fmt, __VA_ARGS__); } while (0)
 
-
-/* CPU MEMORY */
-
-#define CPU_MEM_INTERNAL_RAM_OFFSET         0x0000
-#define CPU_MEM_INTERNAL_RAM_SIZE           0x0800
-
-#define CPU_MEM_INTERNAL_RAM_MIRROR1_OFFSET 0x0800
-#define CPU_MEM_INTERNAL_RAM_MIRROR1_SIZE   0x0800
-
-#define CPU_MEM_INTERNAL_RAM_MIRROR2_OFFSET 0x1000
-#define CPU_MEM_INTERNAL_RAM_MIRROR2_SIZE   0x0800
-
-#define CPU_MEM_INTERNAL_RAM_MIRROR3_OFFSET 0x1800
-#define CPU_MEM_INTERNAL_RAM_MIRROR3_SIZE   0x0800
-
-#define CPU_MEM_PPU_REGISTER_OFFSET         0x2000
-#define CPU_MEM_PPU_REGISTER_SIZE           0x0008
-
-#define CPU_MEM_PPU_MIRRORS_OFFSET          0x2008
-#define CPU_MEM_PPU_MIRRORS_SIZE            0x1FF8
-#define CPU_MEM_PPU_MIRRORS_REPEAT          0x0008
-
-#define CPU_MEM_APU_REGISTER_OFFSET         0x4000
-#define CPU_MEM_APU_REGISTER_SIZE           0x0018
-
-#define CPU_MEM_APU_IO_REGISTER_OFFSET      0x4018
-#define CPU_MEM_APU_IO_REGISTER_SIZE        0x0008
-
-#define CPU_MEM_CRTRDG_REGISTER_OFFSET      0x4020
-#define CPU_MEM_CRTRDG_REGISTER_SIZE        0xBFE0
-
-
 static void nes_cpu_memmap_init(nes_cpu_memmap_t *memmap)
 {
     uint32_t i = 0;
@@ -128,38 +96,6 @@ static void nes_cpu_memmap_init(nes_cpu_memmap_t *memmap)
         offset++;
     }
 }
-
-/* PPU MEMORY */
-
-#define PPU_MEM_PATTERN_TABLE0_OFFSET       0x0000
-#define PPU_MEM_PATTERN_TABLE0_SIZE         0x1000
-
-#define PPU_MEM_PATTERN_TABLE1_OFFSET       0x1000
-#define PPU_MEM_PATTERN_TABLE1_SIZE         0x1000
-
-#define PPU_MEM_NAME_TABLE0_OFFSET          0x2000
-#define PPU_MEM_NAME_TABLE0_SIZE            0x0400
-
-#define PPU_MEM_NAME_TABLE1_OFFSET          0x2400
-#define PPU_MEM_NAME_TABLE1_SIZE            0x0400
-
-#define PPU_MEM_NAME_TABLE2_OFFSET          0x2800
-#define PPU_MEM_NAME_TABLE2_SIZE            0x0400
-
-#define PPU_MEM_NAME_TABLE3_OFFSET          0x2C00
-#define PPU_MEM_NAME_TABLE3_SIZE            0x0400
-
-#define PPU_MEM_NAME_TABLE_MIRRORS_OFFSET   0x3000
-#define PPU_MEM_NAME_TABLE_MIRRORS_SIZE     0x0F00
-#define PPU_MEM_NAME_TABLE_MIRRORS_REPEAT   0x0400
-
-#define PPU_MEM_PALETTE_RAM_OFFSET          0x3F00
-#define PPU_MEM_PALETTE_RAM_SIZE            0x0020
-
-#define PPU_MEM_PALETTE_RAM_MIRRORS_OFFSET  0x3F20
-#define PPU_MEM_PALETTE_RAM_MIRRORS_SIZE    0x00E0
-#define PPU_MEM_PALETTE_RAM_MIRRORS_REPEAT  0x0020
-
 
 static void nes_ppu_memmap_init(nes_ppu_memmap_t *memmap)
 {
@@ -253,5 +189,7 @@ void nes_memmap_init(nes_memmap_t *memmap)
 {
     nes_ppu_memmap_init(&memmap->ppu_mem_map);
     nes_cpu_memmap_init(&memmap->cpu_mem_map);
+    memmap->ppu_last_reg_accessed = 0;
+    memmap->ppu_last_reg_read_write = 0;
 }
 
