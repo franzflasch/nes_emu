@@ -45,6 +45,7 @@ typedef struct nes_cpu_s
 
 void nes_cpu_init(nes_cpu_t *nes_cpu, nes_memmap_t *nes_memmap);
 void nes_cpu_run(nes_cpu_t *nes_cpu);
+void nes_cpu_interrupt(nes_cpu_t *nes_cpu);
 void nes_cpu_print_state(nes_cpu_t *nes_cpu, uint8_t opcode);
 
 #endif

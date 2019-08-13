@@ -71,15 +71,21 @@ int main(int argc, char *argv[])
     // // printf("addr: 0x%x val: 0x%x\n", 0x2018, *nes_mem.mem_virt[0x2018]);
 
     int i = 0;
-    // // for(i=0xC000;i<0xCFFF;i++)
-    // // {
-    // //     printf("addr: 0x%x val: 0x%x ptr: 0x%p\n", i, *nes_mem.mem_virt[i], nes_mem.mem_virt[i]);
-    // // }
+    for(i=0x8000;i<0x8FFF;i++)
+    {
+        printf("addr: 0x%x val: 0x%x ptr: 0x%p\n", i, *nes_mem.cpu_mem_map.mem_virt[i], nes_mem.cpu_mem_map.mem_virt[i]);
+    }
+
+    for(i=0xC000;i<0xCFFF;i++)
+    {
+        printf("addr: 0x%x val: 0x%x ptr: 0x%p\n", i, *nes_mem.cpu_mem_map.mem_virt[i], nes_mem.cpu_mem_map.mem_virt[i]);
+    }
 
     /* do some test cycles */
     for(i=0;i<9000;i++)
     {
         nes_cpu_run(&nes_cpu);
+        //if( i>0 &&  ((i%100) == 0)) nes_cpu_interrupt(&nes_cpu);
     }
 
     /* Testresults are stored at 0x2 and 0x3 according to doc of nestest rom

@@ -288,8 +288,7 @@ static void cpu_sbc(nes_cpu_t *nes_cpu)
     cpu_checknz(nes_cpu, nes_cpu->regs.A);
 }
 
-/* Branching ******/
-
+/* Branching */
 static void cpu_bmi(nes_cpu_t *nes_cpu) 
 { 
     if(nes_cpu->regs.P & FLAG_NEGATIVE) 
@@ -619,7 +618,7 @@ void nes_cpu_run(nes_cpu_t *nes_cpu)
         case 0x17: cpu_addressing_zeropage_x(nes_cpu);  cpu_asl(nes_cpu);  cpu_ora(nes_cpu);  cycles += 6; break;
         case 0x18: cpu_addressing_implied(nes_cpu);     cpu_clc(nes_cpu);  cycles += 2; break;
         case 0x19: cpu_addressing_absolute_y(nes_cpu);  cpu_ora(nes_cpu);  cycles += 4; break;
-        case 0x1A: cpu_addressing_accumulator(nes_cpu); cpu_nop(nes_cpu);  cycles += 2; break;
+        case 0x1A: cpu_addressing_implied(nes_cpu);     cpu_nop(nes_cpu);  cycles += 2; break;
         case 0x1B: cpu_addressing_absolute_y(nes_cpu);  cpu_asl(nes_cpu);  cpu_ora(nes_cpu);  cycles += 7; break;
         case 0x1C: cpu_addressing_absolute_x(nes_cpu);  check_page_cross_x(nes_cpu);  cpu_nop(nes_cpu);  cycles += 4; break;
         case 0x1D: cpu_addressing_absolute_x(nes_cpu);  cpu_ora(nes_cpu);  cycles += 4; break;
@@ -651,7 +650,7 @@ void nes_cpu_run(nes_cpu_t *nes_cpu)
         case 0x37: cpu_addressing_zeropage_x(nes_cpu);  cpu_rol(nes_cpu);  cpu_and(nes_cpu);  cycles += 6; break;
         case 0x38: cpu_addressing_implied(nes_cpu);     cpu_sec(nes_cpu);  cycles += 2; break;
         case 0x39: cpu_addressing_absolute_y(nes_cpu);  cpu_and(nes_cpu);  cycles += 4; break;
-        case 0x3A: cpu_addressing_accumulator(nes_cpu); cpu_nop(nes_cpu);  cycles += 2; break;
+        case 0x3A: cpu_addressing_implied(nes_cpu);     cpu_nop(nes_cpu);  cycles += 2; break;
         case 0x3B: cpu_addressing_absolute_y(nes_cpu);  cpu_rol(nes_cpu); cpu_and(nes_cpu);  cycles += 7; break;
         case 0x3C: cpu_addressing_absolute_x(nes_cpu);  check_page_cross_x(nes_cpu);  cpu_nop(nes_cpu);  cycles += 4; break;
         case 0x3D: cpu_addressing_absolute_x(nes_cpu);  cpu_and(nes_cpu);  cycles += 4; break;
@@ -683,7 +682,7 @@ void nes_cpu_run(nes_cpu_t *nes_cpu)
         case 0x57: cpu_addressing_zeropage_x(nes_cpu);  cpu_lsr(nes_cpu);  cpu_eor(nes_cpu);  cycles += 6; break;
 
         case 0x59: cpu_addressing_absolute_y(nes_cpu);  cpu_eor(nes_cpu);  cycles += 4; break;
-        case 0x5A: cpu_addressing_accumulator(nes_cpu); cpu_nop(nes_cpu);  cycles += 2; break;
+        case 0x5A: cpu_addressing_implied(nes_cpu);     cpu_nop(nes_cpu);  cycles += 2; break;
         case 0x5B: cpu_addressing_absolute_y(nes_cpu);  cpu_lsr(nes_cpu);  cpu_eor(nes_cpu);  cycles += 7; break;
         case 0x5C: cpu_addressing_absolute_x(nes_cpu);  check_page_cross_x(nes_cpu);  cpu_nop(nes_cpu);  cycles += 4; break;
         case 0x5D: cpu_addressing_absolute_x(nes_cpu);  cpu_eor(nes_cpu);  cycles += 4; break;
@@ -709,13 +708,13 @@ void nes_cpu_run(nes_cpu_t *nes_cpu)
         case 0x71: cpu_addressing_indirect_y(nes_cpu);  cpu_adc(nes_cpu);  cycles += 5; break;
         /* 0x72 HLT */
         case 0x73: cpu_addressing_indirect_y(nes_cpu);  cpu_ror(nes_cpu);  cpu_adc(nes_cpu);  cycles += 8; break;
-        case 0x74: cpu_addressing_zeropage(nes_cpu);    cpu_nop(nes_cpu);  cycles += 4; break;
+        case 0x74: cpu_addressing_zeropage_x(nes_cpu);  cpu_nop(nes_cpu);  cycles += 4; break;
         case 0x75: cpu_addressing_zeropage_x(nes_cpu);  cpu_adc(nes_cpu);  cycles += 4; break;
         case 0x76: cpu_addressing_zeropage_x(nes_cpu);  cpu_ror(nes_cpu);  cycles += 6; break;
         case 0x77: cpu_addressing_zeropage_x(nes_cpu);  cpu_ror(nes_cpu);  cpu_adc(nes_cpu);  cycles += 6; break;
         case 0x78: cpu_addressing_implied(nes_cpu);     cpu_sei(nes_cpu);  cycles += 2; break;
         case 0x79: cpu_addressing_absolute_y(nes_cpu);  cpu_adc(nes_cpu);  cycles += 4; break;
-        case 0x7A: cpu_addressing_accumulator(nes_cpu); cpu_nop(nes_cpu);  cycles += 2; break;
+        case 0x7A: cpu_addressing_implied(nes_cpu);     cpu_nop(nes_cpu);  cycles += 2; break;
         case 0x7B: cpu_addressing_absolute_y(nes_cpu);  cpu_ror(nes_cpu);  cpu_adc(nes_cpu);  cycles += 7; break;
         case 0x7C: cpu_addressing_absolute_x(nes_cpu);  check_page_cross_x(nes_cpu);  cpu_nop(nes_cpu);  cycles += 4; break;
         case 0x7D: cpu_addressing_absolute_x(nes_cpu);  cpu_adc(nes_cpu);  cycles += 4; break;
@@ -730,6 +729,7 @@ void nes_cpu_run(nes_cpu_t *nes_cpu)
         case 0x86: cpu_addressing_zeropage(nes_cpu);    cpu_stx(nes_cpu);  cycles += 3; break;
         case 0x87: cpu_addressing_zeropage(nes_cpu);    cpu_axs(nes_cpu);  cycles += 3; break;
         case 0x88: cpu_addressing_implied(nes_cpu);     cpu_dey(nes_cpu);  cycles += 2; break;
+
         case 0x8A: cpu_addressing_implied(nes_cpu);     cpu_txa(nes_cpu);  cycles += 2; break;
 
         case 0x8C: cpu_addressing_absolute(nes_cpu);    cpu_sty(nes_cpu);  cycles += 4; break;
@@ -807,7 +807,7 @@ void nes_cpu_run(nes_cpu_t *nes_cpu)
         case 0xD7: cpu_addressing_zeropage_x(nes_cpu);  cpu_dec(nes_cpu);  cpu_cmp(nes_cpu);  cycles += 6; break;
         case 0xD8: cpu_addressing_implied(nes_cpu);     cpu_cld(nes_cpu);  cycles += 2; break;
         case 0xD9: cpu_addressing_absolute_y(nes_cpu);  cpu_cmp(nes_cpu);  cycles += 4; break;
-        case 0xDA: cpu_addressing_accumulator(nes_cpu); cpu_nop(nes_cpu);  cycles += 2; break;
+        case 0xDA: cpu_addressing_implied(nes_cpu);     cpu_nop(nes_cpu);  cycles += 2; break;
         case 0xDB: cpu_addressing_absolute_y(nes_cpu);  cpu_dec(nes_cpu); cpu_cmp(nes_cpu);  cycles += 7; break;
         case 0xDC: cpu_addressing_absolute_x(nes_cpu);  check_page_cross_x(nes_cpu);  cpu_nop(nes_cpu);  cycles += 4; break;
         case 0xDD: cpu_addressing_absolute_x(nes_cpu);  cpu_cmp(nes_cpu);  cycles += 4; break;
@@ -823,7 +823,7 @@ void nes_cpu_run(nes_cpu_t *nes_cpu)
         case 0xE7: cpu_addressing_zeropage(nes_cpu);    cpu_inc(nes_cpu);  cpu_sbc(nes_cpu); cycles += 5; break;
         case 0xE8: cpu_addressing_implied(nes_cpu);     cpu_inx(nes_cpu);  cycles += 2; break;
         case 0xE9: cpu_addressing_immediate(nes_cpu);   cpu_sbc(nes_cpu);  cycles += 2; break;
-        case 0xEA: cpu_addressing_accumulator(nes_cpu); cpu_nop(nes_cpu);  cycles += 2; break;
+        case 0xEA: cpu_addressing_implied(nes_cpu);     cpu_nop(nes_cpu);  cycles += 2; break;
         case 0xEB: cpu_addressing_immediate(nes_cpu);   cpu_sbc(nes_cpu);  cycles += 2; break;
         case 0xEC: cpu_addressing_absolute(nes_cpu);    cpu_cpx(nes_cpu);  cycles += 4; break;
         case 0xED: cpu_addressing_absolute(nes_cpu);    cpu_sbc(nes_cpu);  cycles += 4; break;
@@ -839,27 +839,28 @@ void nes_cpu_run(nes_cpu_t *nes_cpu)
         case 0xF7: cpu_addressing_zeropage_x(nes_cpu);  cpu_inc(nes_cpu);  cpu_sbc(nes_cpu); cycles += 6; break;
         case 0xF8: cpu_addressing_implied(nes_cpu);     cpu_sed(nes_cpu);  cycles += 2; break;
         case 0xF9: cpu_addressing_absolute_y(nes_cpu);  cpu_sbc(nes_cpu);  cycles += 4; break;
-        case 0xFA: cpu_addressing_accumulator(nes_cpu); cpu_nop(nes_cpu);  cycles += 2; break;
+        case 0xFA: cpu_addressing_implied(nes_cpu);     cpu_nop(nes_cpu);  cycles += 2; break;
         case 0xFB: cpu_addressing_absolute_y(nes_cpu);  cpu_inc(nes_cpu);  cpu_sbc(nes_cpu); cycles += 7; break;
         case 0xFC: cpu_addressing_absolute_x(nes_cpu);  check_page_cross_x(nes_cpu);  cpu_nop(nes_cpu);  cycles += 4; break;
         case 0xFD: cpu_addressing_absolute_x(nes_cpu);  cpu_sbc(nes_cpu);  cycles += 4; break;
         case 0xFE: cpu_addressing_absolute_x(nes_cpu);  cpu_inc(nes_cpu);  cycles += 7; break;
         case 0xFF: cpu_addressing_absolute_x(nes_cpu);  cpu_inc(nes_cpu);  cpu_sbc(nes_cpu);  cycles += 7; break;
         default:
-            while(1) printf("Unknown instruction!\n");
+            printf("!!!Unknown instruction: %x\n", opcode);
+            while(1);
             break;
     }
     cycles += nes_cpu->additional_cycles;
     nes_cpu->num_cycles += cycles;
 }
 
-void cpu_interrupt(nes_cpu_t *nes_cpu) 
+void nes_cpu_interrupt(nes_cpu_t *nes_cpu) 
 {
     // if(ppu_generate_nmi()) {
-    //     cpu.p |= FLAG_INTERRUPT;
-    //     cpu_stack_push_word(cpu.pc);
-    //     cpu_stack_push_byte(cpu.p);
-    //     cpu.pc = memory_read_word(0xfffa);
+        nes_cpu->regs.P |= FLAG_INTERRUPT;
+        cpu_stack_push_word(nes_cpu, nes_cpu->regs.PC);
+        cpu_stack_push_byte(nes_cpu, nes_cpu->regs.P);
+        nes_cpu->regs.PC = memory_read_word(nes_cpu, 0xfffa);
     // }
 }
 
