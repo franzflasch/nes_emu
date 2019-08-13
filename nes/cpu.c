@@ -12,19 +12,43 @@
 
 static uint8_t memory_read_byte(nes_cpu_t *nes_cpu, uint16_t addr) 
 {
+    if( ((addr >= 0x2000) && (addr <= 0x2007)) || (addr == 0x4014) )
+    {
+        nes_cpu->memmap->ppu_last_reg_accessed = addr;
+        nes_cpu->memmap->ppu_last_reg_read_write = PPU_REG_ACCESS_READ;
+        //printf("PPU READ BYTE ACCESS!: %x\n", addr);
+    }
     return (*nes_cpu->memmap->cpu_mem_map.mem_virt[addr]); 
 }
 
 static uint16_t memory_read_word(nes_cpu_t *nes_cpu, uint16_t addr) {
+    if( ((addr >= 0x2000) && (addr <= 0x2007)) || (addr == 0x4014) )
+    {
+        nes_cpu->memmap->ppu_last_reg_accessed = addr;
+        nes_cpu->memmap->ppu_last_reg_read_write = PPU_REG_ACCESS_READ;
+        //printf("PPU READ WORD ACCESS!: %x\n", addr);
+    }
     return memory_read_byte(nes_cpu, addr) + (memory_read_byte(nes_cpu, addr + 1) << 8);
 }
 
 static void memory_write_byte(nes_cpu_t *nes_cpu, uint16_t addr, uint8_t data) 
 {
+    if( ((addr >= 0x2000) && (addr <= 0x2007)) || (addr == 0x4014) )
+    {
+        nes_cpu->memmap->ppu_last_reg_accessed = addr;
+        nes_cpu->memmap->ppu_last_reg_read_write = PPU_REG_ACCESS_WRITE;
+        //printf("PPU WRITE BYTE ACCESS!: %x data: %x\n", addr, data);
+    }
     *nes_cpu->memmap->cpu_mem_map.mem_virt[addr] = data;
 }
 
 static void memory_write_word(nes_cpu_t *nes_cpu, uint16_t addr, uint16_t data) {
+    if( ((addr >= 0x2000) && (addr <= 0x2007)) || (addr == 0x4014) )
+    {
+        nes_cpu->memmap->ppu_last_reg_accessed = addr;
+        nes_cpu->memmap->ppu_last_reg_read_write = PPU_REG_ACCESS_WRITE;
+        //printf("PPU WRITE WORD ACCESS!: %x data: %x\n", addr, data);
+    }
     memory_write_byte(nes_cpu, addr, data & 0xFF);
     memory_write_byte(nes_cpu, addr + 1, data >> 8);
 }
@@ -579,10 +603,10 @@ void nes_cpu_print_state(nes_cpu_t *nes_cpu, uint8_t opcode)
             nes_cpu->num_cycles);
 }
 
-void nes_cpu_run(nes_cpu_t *nes_cpu) 
+uint32_t nes_cpu_run(nes_cpu_t *nes_cpu) 
 {
     uint8_t opcode = 0;
-    int cycles = 0;
+    uint32_t cycles = 0;
     nes_cpu->additional_cycles = 0;
 
     opcode = memory_read_byte(nes_cpu, nes_cpu->regs.PC);
@@ -852,6 +876,8 @@ void nes_cpu_run(nes_cpu_t *nes_cpu)
     }
     cycles += nes_cpu->additional_cycles;
     nes_cpu->num_cycles += cycles;
+
+    return cycles;
 }
 
 void nes_cpu_interrupt(nes_cpu_t *nes_cpu) 
@@ -871,7 +897,8 @@ void nes_cpu_init(nes_cpu_t *nes_cpu, nes_memmap_t *memmap)
     /* At first set the memory interface */
     nes_cpu->memmap = memmap;
 
-    nes_cpu->regs.PC = 0xC000; //memory_read_word(nes_cpu, 0xFFFC);
+    nes_cpu->regs.PC = 0xC000;
+    //nes_cpu->regs.PC = 0xFFFC; /* Reset vector */
 
     //printf("PC: 0x%x\n", nes_cpu->regs.PC);
 

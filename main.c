@@ -15,6 +15,9 @@ int main(int argc, char *argv[])
     static nes_cpu_t nes_cpu;
     static nes_cartridge_t nes_cart;
 
+    uint32_t cpu_clocks = 0;
+    
+    uint32_t ppu_clock_index = 0;
 
     if(argc != 2)
     {
@@ -83,10 +86,23 @@ int main(int argc, char *argv[])
 
     /* do some test cycles */
     for(i=0;i<9000;i++)
+    //for(;;)
     {
-        nes_cpu_run(&nes_cpu);
+        cpu_clocks = nes_cpu_run(&nes_cpu);
         //if( i>0 &&  ((i%100) == 0)) nes_cpu_interrupt(&nes_cpu);
+
+        /* the ppu runs at a  3 times higher clock rate than the cpu
+           so we need to give the ppu some clocks here to catchup */
+        for(ppu_clock_index=0;ppu_clock_index<(3*cpu_clocks);ppu_clock_index++)
+            nes_ppu_run(&nes_ppu);
+
+        nes_ppu_dump_regs(&nes_ppu);
     }
+
+    // *nes_cpu.memmap->cpu_mem_map.mem_virt[0x2000] = 0x42;
+    // *nes_cpu.memmap->cpu_mem_map.mem_virt[0x2001] = 0x43;
+    // printf("ppuctrl: %x %x\n", nes_ppu.regs->ctrl, *nes_cpu.memmap->cpu_mem_map.mem_virt[0x2000]);
+    // printf("ppumask: %x %x\n", nes_ppu.regs->mask, *nes_cpu.memmap->cpu_mem_map.mem_virt[0x2001]);
 
     /* Testresults are stored at 0x2 and 0x3 according to doc of nestest rom
      * if both registers are 0 everything should be fine
