@@ -74,18 +74,18 @@ int main(int argc, char *argv[])
     // // printf("addr: 0x%x val: 0x%x\n", 0x2018, *nes_mem.mem_virt[0x2018]);
 
     int i = 0;
-    for(i=0x8000;i<0x8FFF;i++)
+    for(i=0x8000;i<0xBFFF;i++)
     {
         printf("addr: 0x%x val: 0x%x ptr: 0x%p\n", i, *nes_mem.cpu_mem_map.mem_virt[i], nes_mem.cpu_mem_map.mem_virt[i]);
     }
 
-    for(i=0xC000;i<0xCFFF;i++)
+    for(i=0xC000;i<0xFFFF;i++)
     {
         printf("addr: 0x%x val: 0x%x ptr: 0x%p\n", i, *nes_mem.cpu_mem_map.mem_virt[i], nes_mem.cpu_mem_map.mem_virt[i]);
     }
 
     /* do some test cycles */
-    for(i=0;i<9000;i++)
+    for(i=0;i<10000;i++)
     //for(;;)
     {
         cpu_clocks = nes_cpu_run(&nes_cpu);

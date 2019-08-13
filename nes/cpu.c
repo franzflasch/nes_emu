@@ -897,8 +897,8 @@ void nes_cpu_init(nes_cpu_t *nes_cpu, nes_memmap_t *memmap)
     /* At first set the memory interface */
     nes_cpu->memmap = memmap;
 
-    nes_cpu->regs.PC = 0xC000;
-    //nes_cpu->regs.PC = 0xFFFC; /* Reset vector */
+    //nes_cpu->regs.PC = 0xC000;
+    nes_cpu->regs.PC = memory_read_word(nes_cpu, 0xFFFC); /* Reset vector */
 
     //printf("PC: 0x%x\n", nes_cpu->regs.PC);
 
