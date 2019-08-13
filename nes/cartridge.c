@@ -2,7 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define PRG_LOCATION 0xC000
+#define PRG_LOCATION0 0x8000
+#define PRG_LOCATION1 0xC000
 
 static void memory_write_byte(nes_cartridge_t *nes_cart, uint16_t addr, uint8_t data) 
 {
@@ -33,8 +34,8 @@ int nes_cart_load_rom(nes_cartridge_t *nes_cart, uint8_t **mem_interface, char *
         nes_cart->prg_rom_size = 16 * 1024 * nes_cart->header[4];
         nes_cart->chr_rom_size = 8  * 1024 * nes_cart->header[5];
         nes_cart->prg_ram_size = 8  * 1024 * nes_cart->header[8];
-        if(nes_cart->chr_rom_size == 0) { nes_cart->chr_rom_size = 8 * 1024; }
-        if(nes_cart->prg_ram_size == 0) { nes_cart->prg_ram_size = 8 * 1024; }
+        //if(nes_cart->chr_rom_size == 0) { nes_cart->chr_rom_size = 8 * 1024; }
+        //if(nes_cart->prg_ram_size == 0) { nes_cart->prg_ram_size = 8 * 1024; }
     }
 
     // nes_cart->prg_rom = (uint8_t *)malloc((size_t)nes_cart->prg_rom_size);
@@ -50,7 +51,8 @@ int nes_cart_load_rom(nes_cartridge_t *nes_cart, uint8_t **mem_interface, char *
         if(fread(&tmp, sizeof(uint8_t), 1, fp) != 1) 
             printf("Err fread\n");
 
-        memory_write_byte(nes_cart, PRG_LOCATION+i, tmp);
+        memory_write_byte(nes_cart, PRG_LOCATION0+i, tmp);
+        memory_write_byte(nes_cart, PRG_LOCATION1+i, tmp);
     }
 
     // if(fread(nes_cart->prg_rom, sizeof(uint8_t), (size_t)nes_cart->prg_rom_size, fp) != (size_t)nes_cart->prg_rom_size) 
@@ -64,11 +66,11 @@ int nes_cart_load_rom(nes_cartridge_t *nes_cart, uint8_t **mem_interface, char *
         return ERR_CHR_ROM_LOAD_FAILED;
     }
 
-    for(i=0;i<nes_cart->chr_rom_size;i++)
-    {
-        printf("%02x ", nes_cart->chr_rom[i]);
-        if((i%8)==0) printf("\n");
-    }
+    // for(i=0;i<nes_cart->chr_rom_size;i++)
+    // {
+    //     printf("%02x ", nes_cart->chr_rom[i]);
+    //     if((i%8)==0) printf("\n");
+    // }
 
 
     fclose(fp);
@@ -78,8 +80,12 @@ int nes_cart_load_rom(nes_cartridge_t *nes_cart, uint8_t **mem_interface, char *
 
 void nes_cart_print_rom_metadata(nes_cartridge_t *nes_cart) 
 {
-    printf("ROM Metadata: =============================\n");
-    printf("Sinature: %c%c%c\n", nes_cart->header[0], nes_cart->header[1], nes_cart->header[2]);
+    const uint16_t MAPPER_TYPE_NROM = 0x1A;
+
+    printf("==============================================\n");
+    printf("ROM Metadata:\n");
+    printf("Sinature: %c%c%c %s\n", nes_cart->header[0], nes_cart->header[1], nes_cart->header[2], nes_cart->header[3] == MAPPER_TYPE_NROM ? "NROM" : "Unknown");
+    printf("Type: %d\n", nes_cart->header[5]);
     printf("PRG ROM Size: %d B\n", nes_cart->prg_rom_size);
     printf("CHR ROM Size: %d B\n", nes_cart->chr_rom_size);
     printf("PRG RAM Size: %d B\n", nes_cart->prg_ram_size);
