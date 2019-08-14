@@ -66,11 +66,12 @@ int nes_cart_load_rom(nes_cartridge_t *nes_cart, uint8_t **mem_interface, char *
         return ERR_CHR_ROM_LOAD_FAILED;
     }
 
-    // for(i=0;i<nes_cart->chr_rom_size;i++)
-    // {
-    //     printf("%02x ", nes_cart->chr_rom[i]);
-    //     if((i%8)==0) printf("\n");
-    // }
+    for(i=0;i<nes_cart->chr_rom_size;i++)
+    {
+        printf("%02x ", nes_cart->chr_rom[i]);
+        if((i%8)==7) printf("\n");
+    }
+    //exit(0);
 
 
     fclose(fp);
