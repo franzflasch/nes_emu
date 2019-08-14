@@ -29,22 +29,28 @@ void nes_ppu_init(nes_ppu_t *nes_ppu, nes_memmap_t *memmap)
 
 void nes_ppu_run(nes_ppu_t *nes_ppu)
 {   
-    if(nes_ppu->memmap->ppu_last_reg_accessed)
+    if(nes_ppu->memmap->last_reg_accessed)
     {
-        /* write */
-        if(nes_ppu->memmap->ppu_last_reg_read_write == PPU_REG_ACCESS_WRITE)
+        if( ((nes_ppu->memmap->last_reg_accessed >= CPU_MEM_PPU_REGISTER_OFFSET) 
+              && (nes_ppu->memmap->last_reg_accessed <= CPU_MEM_PPU_REGISTER_AREA_END)) 
+              || (nes_ppu->memmap->last_reg_accessed == CPU_MEM_OAMDMA_REGISTER) )
         {
-            nes_ppu->regs->status &= (~0x1F);
-            nes_ppu->regs->status |= (*nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->ppu_last_reg_accessed] & 0x1F);
-            printf("PPU WRITE ACCESS!: %x data: %x\n", nes_ppu->memmap->ppu_last_reg_accessed, *nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->ppu_last_reg_accessed]);
-        }
-        else if(nes_ppu->memmap->ppu_last_reg_read_write == PPU_REG_ACCESS_READ)
-        {
-            printf("PPU READ ACCESS!: %x data: %x\n", nes_ppu->memmap->ppu_last_reg_accessed, *nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->ppu_last_reg_accessed]);
-        }
+            /* write */
+            if(nes_ppu->memmap->last_reg_read_write == REG_ACCESS_WRITE)
+            {
+                nes_ppu->regs->status &= (~0x1F);
+                nes_ppu->regs->status |= (*nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->last_reg_accessed] & 0x1F);
+                printf("PPU WRITE ACCESS!: %x data: %x\n", nes_ppu->memmap->last_reg_accessed, *nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->last_reg_accessed]);
+            }
+            /* read */
+            else if(nes_ppu->memmap->last_reg_read_write == REG_ACCESS_READ)
+            {
+                printf("PPU READ ACCESS!: %x data: %x\n", nes_ppu->memmap->last_reg_accessed, *nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->last_reg_accessed]);
+            }
 
-        nes_ppu->memmap->ppu_last_reg_accessed = 0;
-        nes_ppu->memmap->ppu_last_reg_read_write = 0;
+            nes_ppu->memmap->last_reg_accessed = 0;
+            nes_ppu->memmap->last_reg_read_write = 0;
+        }
     }
 
     /* prerender scanline */

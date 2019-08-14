@@ -12,43 +12,27 @@
 
 static uint8_t memory_read_byte(nes_cpu_t *nes_cpu, uint16_t addr) 
 {
-    if( ((addr >= 0x2000) && (addr <= 0x2007)) || (addr == 0x4014) )
-    {
-        nes_cpu->memmap->ppu_last_reg_accessed = addr;
-        nes_cpu->memmap->ppu_last_reg_read_write = PPU_REG_ACCESS_READ;
-        //printf("PPU READ BYTE ACCESS!: %x\n", addr);
-    }
+    nes_cpu->memmap->last_reg_accessed = addr;
+    nes_cpu->memmap->last_reg_read_write = REG_ACCESS_READ;
     return (*nes_cpu->memmap->cpu_mem_map.mem_virt[addr]); 
 }
 
 static uint16_t memory_read_word(nes_cpu_t *nes_cpu, uint16_t addr) {
-    if( ((addr >= 0x2000) && (addr <= 0x2007)) || (addr == 0x4014) )
-    {
-        nes_cpu->memmap->ppu_last_reg_accessed = addr;
-        nes_cpu->memmap->ppu_last_reg_read_write = PPU_REG_ACCESS_READ;
-        //printf("PPU READ WORD ACCESS!: %x\n", addr);
-    }
+    nes_cpu->memmap->last_reg_accessed = addr;
+    nes_cpu->memmap->last_reg_read_write = REG_ACCESS_READ;
     return memory_read_byte(nes_cpu, addr) + (memory_read_byte(nes_cpu, addr + 1) << 8);
 }
 
 static void memory_write_byte(nes_cpu_t *nes_cpu, uint16_t addr, uint8_t data) 
 {
-    if( ((addr >= 0x2000) && (addr <= 0x2007)) || (addr == 0x4014) )
-    {
-        nes_cpu->memmap->ppu_last_reg_accessed = addr;
-        nes_cpu->memmap->ppu_last_reg_read_write = PPU_REG_ACCESS_WRITE;
-        //printf("PPU WRITE BYTE ACCESS!: %x data: %x\n", addr, data);
-    }
+    nes_cpu->memmap->last_reg_accessed = addr;
+    nes_cpu->memmap->last_reg_read_write = REG_ACCESS_WRITE;
     *nes_cpu->memmap->cpu_mem_map.mem_virt[addr] = data;
 }
 
 static void memory_write_word(nes_cpu_t *nes_cpu, uint16_t addr, uint16_t data) {
-    if( ((addr >= 0x2000) && (addr <= 0x2007)) || (addr == 0x4014) )
-    {
-        nes_cpu->memmap->ppu_last_reg_accessed = addr;
-        nes_cpu->memmap->ppu_last_reg_read_write = PPU_REG_ACCESS_WRITE;
-        //printf("PPU WRITE WORD ACCESS!: %x data: %x\n", addr, data);
-    }
+    nes_cpu->memmap->last_reg_accessed = addr;
+    nes_cpu->memmap->last_reg_read_write = REG_ACCESS_WRITE;
     memory_write_byte(nes_cpu, addr, data & 0xFF);
     memory_write_byte(nes_cpu, addr + 1, data >> 8);
 }

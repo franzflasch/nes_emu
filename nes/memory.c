@@ -189,7 +189,7 @@ void nes_memmap_init(nes_memmap_t *memmap)
 {
     nes_ppu_memmap_init(&memmap->ppu_mem_map);
     nes_cpu_memmap_init(&memmap->cpu_mem_map);
-    memmap->ppu_last_reg_accessed = 0;
-    memmap->ppu_last_reg_read_write = 0;
+    memmap->last_reg_accessed = 0;
+    memmap->last_reg_read_write = 0;
 }
 

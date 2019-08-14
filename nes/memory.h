@@ -23,8 +23,12 @@
 #define CPU_MEM_PPU_MIRRORS_SIZE            0x1FF8
 #define CPU_MEM_PPU_MIRRORS_REPEAT          0x0008
 
+#define CPU_MEM_PPU_REGISTER_AREA_END       0x3FFF
+
 #define CPU_MEM_APU_REGISTER_OFFSET         0x4000
 #define CPU_MEM_APU_REGISTER_SIZE           0x0018
+
+#define CPU_MEM_OAMDMA_REGISTER             0x4014
 
 #define CPU_MEM_APU_IO_REGISTER_OFFSET      0x4018
 #define CPU_MEM_APU_IO_REGISTER_SIZE        0x0008
@@ -70,8 +74,8 @@
 #define PPU_MEM_VIRT_SIZE 0x4000
 #define PPU_MEM_OAMD_SIZE 0x0100
 
-#define PPU_REG_ACCESS_READ 1
-#define PPU_REG_ACCESS_WRITE 2
+#define REG_ACCESS_READ 1
+#define REG_ACCESS_WRITE 2
 
 typedef struct nes_cpu_memmap_s
 {
@@ -104,8 +108,8 @@ typedef struct nes_memmap_s
 {
     nes_cpu_memmap_t cpu_mem_map;
     nes_ppu_memmap_t ppu_mem_map;
-    uint16_t ppu_last_reg_accessed;
-    uint16_t ppu_last_reg_read_write;
+    uint16_t last_reg_accessed;
+    uint16_t last_reg_read_write;
 
 } nes_memmap_t;
 
