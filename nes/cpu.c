@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <cpu.h>
+#include <string.h>
 
 #define FLAG_CARRY     0x01
 #define FLAG_ZERO      0x02
@@ -407,7 +408,7 @@ static void cpu_cpy(nes_cpu_t *nes_cpu)
 }
 
 static void cpu_clc(nes_cpu_t *nes_cpu) { cpu_modify_flag(nes_cpu, FLAG_CARRY, 0); }
-//static void cpu_cli(nes_cpu_t *nes_cpu) { cpu_modify_flag(nes_cpu, FLAG_INTERRUPT, 0); }
+static void cpu_cli(nes_cpu_t *nes_cpu) { cpu_modify_flag(nes_cpu, FLAG_INTERRUPT, 0); }
 static void cpu_cld(nes_cpu_t *nes_cpu) { cpu_modify_flag(nes_cpu, FLAG_DECIMAL, 0); }
 static void cpu_clv(nes_cpu_t *nes_cpu) { cpu_modify_flag(nes_cpu, FLAG_OVERFLOW, 0); }
 static void cpu_sec(nes_cpu_t *nes_cpu) { cpu_modify_flag(nes_cpu, FLAG_CARRY, 1); }
@@ -688,7 +689,7 @@ uint32_t nes_cpu_run(nes_cpu_t *nes_cpu)
         case 0x55: cpu_addressing_zeropage_x(nes_cpu);  cpu_eor(nes_cpu);  cycles += 4; break;
         case 0x56: cpu_addressing_zeropage_x(nes_cpu);  cpu_lsr(nes_cpu);  cycles += 6; break;
         case 0x57: cpu_addressing_zeropage_x(nes_cpu);  cpu_lsr(nes_cpu);  cpu_eor(nes_cpu);  cycles += 6; break;
-
+        case 0x58: cpu_addressing_implied(nes_cpu);     cpu_cli(nes_cpu);  cycles += 2; break;
         case 0x59: cpu_addressing_absolute_y(nes_cpu);  cpu_eor(nes_cpu);  cycles += 4; break;
         case 0x5A: cpu_addressing_implied(nes_cpu);     cpu_nop(nes_cpu);  cycles += 2; break;
         case 0x5B: cpu_addressing_absolute_y(nes_cpu);  cpu_lsr(nes_cpu);  cpu_eor(nes_cpu);  cycles += 7; break;
@@ -876,6 +877,8 @@ void nes_cpu_interrupt(nes_cpu_t *nes_cpu)
 
 void nes_cpu_init(nes_cpu_t *nes_cpu, nes_memmap_t *memmap)
 {
+    memset(nes_cpu, 0, sizeof(*nes_cpu));
+
     nes_cpu->num_cycles = 0;
 
     /* At first set the memory interface */

@@ -172,7 +172,14 @@ static void nes_ppu_memmap_init(nes_ppu_memmap_t *memmap)
     for(i=PPU_MEM_PALETTE_RAM_OFFSET;i<(PPU_MEM_PALETTE_RAM_OFFSET+PPU_MEM_PALETTE_RAM_SIZE);i++)
     {
         debug_print("PPU_MEM_PALETTE_RAM virt: %x phys: %x\n", i, offset);
-        memmap->mem_virt[i] = &memmap->mem_phys[offset];
+
+        /* Some regs here are internally mirrored */
+        if(i==0x3F10) memmap->mem_virt[i] = memmap->mem_virt[0x3F00];
+        else if(i==0x3F14) memmap->mem_virt[i] = memmap->mem_virt[0x3F04];
+        else if (i==0x3F18) memmap->mem_virt[i] = memmap->mem_virt[0x3F08];
+        else if (i==0x3F1C) memmap->mem_virt[i] = memmap->mem_virt[0x3F0C];
+        else memmap->mem_virt[i] = &memmap->mem_phys[offset];
+
         offset++;
     }
 

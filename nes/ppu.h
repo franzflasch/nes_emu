@@ -56,10 +56,23 @@ typedef struct nes_ppu_s
 	nes_memmap_t *memmap;
 	ppu_regs_t *regs;
 
+    uint8_t addr_access_cycle;
+
+    uint16_t curr_ppu_data_address;
+
 	uint16_t current_scan_line;
     uint16_t current_pixel;
 
 } nes_ppu_t;
+
+/* NTSC color pallete */
+typedef struct ppu_color_pallete_2C02_s
+{
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+
+} ppu_color_pallete_2C02_t;
 
 void nes_ppu_write_oam_data(nes_memmap_t *memmap, uint8_t val);
 uint8_t nes_ppu_read_oam_data(nes_memmap_t *memmap);

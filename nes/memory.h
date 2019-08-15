@@ -28,13 +28,29 @@
 #define CPU_MEM_APU_REGISTER_OFFSET         0x4000
 #define CPU_MEM_APU_REGISTER_SIZE           0x0018
 
-#define CPU_MEM_OAMDMA_REGISTER             0x4014
-
 #define CPU_MEM_APU_IO_REGISTER_OFFSET      0x4018
 #define CPU_MEM_APU_IO_REGISTER_SIZE        0x0008
 
 #define CPU_MEM_CRTRDG_REGISTER_OFFSET      0x4020
 #define CPU_MEM_CRTRDG_REGISTER_SIZE        0xBFE0
+
+#define CPU_MEM_PHYS_SIZE CPU_MEM_INTERNAL_RAM_SIZE + \
+                          CPU_MEM_PPU_REGISTER_SIZE + \
+                          CPU_MEM_APU_REGISTER_SIZE + \
+                          CPU_MEM_APU_IO_REGISTER_SIZE + \
+                          CPU_MEM_CRTRDG_REGISTER_SIZE
+#define CPU_MEM_VIRT_SIZE 0x10000
+
+
+#define CPU_MEM_PPU_CTRL_REGISTER           0x2000
+#define CPU_MEM_PPU_MASK_REGISTER           0x2001
+#define CPU_MEM_PPU_STATUS_REGISTER         0x2002
+#define CPU_MEM_PPU_OAMADDR_REGISTER        0x2003
+#define CPU_MEM_PPU_OAMDATA_REGISTER        0x2004
+#define CPU_MEM_PPU_SCROLL_REGISTER         0x2005
+#define CPU_MEM_PPU_ADDR_REGISTER           0x2006
+#define CPU_MEM_PPU_DATA_REGISTER           0x2007
+#define CPU_MEM_PPU_OAMDMA_REGISTER         0x4014
 
 /* PPU MEMORY */
 #define PPU_MEM_PATTERN_TABLE0_OFFSET       0x0000
@@ -61,18 +77,23 @@
 
 #define PPU_MEM_PALETTE_RAM_OFFSET          0x3F00
 #define PPU_MEM_PALETTE_RAM_SIZE            0x0020
+#define PPU_MEM_PALETTE_INTERNAL_MIRRORS    4 /* $3F00 <-> $3F10 | $3F04 <-> $3F14 | $3F08 <-> $3F18 | $3F0C <-> $3F1C */
 
 #define PPU_MEM_PALETTE_RAM_MIRRORS_OFFSET  0x3F20
 #define PPU_MEM_PALETTE_RAM_MIRRORS_SIZE    0x00E0
 #define PPU_MEM_PALETTE_RAM_MIRRORS_REPEAT  0x0020
 
-/* MEM Defines needed for emulation */
-#define CPU_MEM_PHYS_SIZE 0xC808
-#define CPU_MEM_VIRT_SIZE 0x10000
-
-#define PPU_MEM_PHYS_SIZE 0x3020
+#define PPU_MEM_PHYS_SIZE PPU_MEM_PATTERN_TABLE0_SIZE + \
+                          PPU_MEM_PATTERN_TABLE1_SIZE + \
+                          PPU_MEM_NAME_TABLE0_SIZE + \
+                          PPU_MEM_NAME_TABLE1_SIZE + \
+                          PPU_MEM_NAME_TABLE2_SIZE + \
+                          PPU_MEM_NAME_TABLE3_SIZE + \
+                          PPU_MEM_PALETTE_RAM_SIZE - PPU_MEM_PALETTE_INTERNAL_MIRRORS
 #define PPU_MEM_VIRT_SIZE 0x4000
 #define PPU_MEM_OAMD_SIZE 0x0100
+
+
 
 #define REG_ACCESS_READ 1
 #define REG_ACCESS_WRITE 2
