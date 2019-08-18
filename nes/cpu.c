@@ -1,6 +1,10 @@
 #include <stdio.h>
+#include <nes.h>
 #include <cpu.h>
 #include <string.h>
+
+#define debug_print(fmt, ...) \
+            do { if (DEBUG_CPU) printf(fmt, __VA_ARGS__); } while (0)
 
 #define FLAG_CARRY     0x01
 #define FLAG_ZERO      0x02
@@ -577,7 +581,7 @@ uint64_t cpu_clock(nes_cpu_t *nes_cpu)
 
 void nes_cpu_print_state(nes_cpu_t *nes_cpu, uint8_t opcode)
 {
-    printf("PC:%04X opcode:%02X A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%ld\n", 
+    debug_print("PC:%04X opcode:%02X A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%ld\n", 
             nes_cpu->regs.PC, 
             opcode, 
             nes_cpu->regs.A, 
@@ -867,7 +871,7 @@ uint32_t nes_cpu_run(nes_cpu_t *nes_cpu)
 
 void nes_cpu_nmi(nes_cpu_t *nes_cpu) 
 {
-    printf("NMI! cycles: %ld\n", nes_cpu->num_cycles);
+    debug_print("NMI! cycles: %ld\n", nes_cpu->num_cycles);
     //nes_cpu->regs.P |= FLAG_INTERRUPT;
     cpu_stack_push_word(nes_cpu, nes_cpu->regs.PC);
     cpu_stack_push_byte(nes_cpu, nes_cpu->regs.P);

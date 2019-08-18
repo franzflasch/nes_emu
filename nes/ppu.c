@@ -1,6 +1,10 @@
+#include <nes.h>
 #include <ppu.h>
 #include <stdio.h>
 #include <string.h>
+
+#define debug_print(fmt, ...) \
+            do { if (DEBUG_PPU) printf(fmt, __VA_ARGS__); } while (0)
 
 // /* CPU <-> PPU Shared Registers */
 // #define CPU_MEM_PPU_REG_OAM_ADDR 0x2003
@@ -59,7 +63,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
         /* write */
         if(nes_ppu->memmap->last_reg_read_write == REG_ACCESS_WRITE)
         {
-            printf("PPU WRITE ACCESS!: %x data: %x\n", nes_ppu->memmap->last_reg_accessed, *nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->last_reg_accessed]);
+            debug_print("PPU WRITE ACCESS!: %x data: %x\n", nes_ppu->memmap->last_reg_accessed, *nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->last_reg_accessed]);
 
             /* Update least significant bits previously written into a PPU register */
             nes_ppu->regs->status &= (~0x1F);
@@ -95,7 +99,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
         /* read */
         else if(nes_ppu->memmap->last_reg_read_write == REG_ACCESS_READ)
         {
-            printf("PPU READ ACCESS!: %x data: %x\n", nes_ppu->memmap->last_reg_accessed, *nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->last_reg_accessed]);
+            debug_print("PPU READ ACCESS!: %x data: %x\n", nes_ppu->memmap->last_reg_accessed, *nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->last_reg_accessed]);
             if(nes_ppu->memmap->last_reg_accessed == CPU_MEM_PPU_STATUS_REGISTER)
             {
                 nes_ppu->regs->addr = 0;
@@ -151,7 +155,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
 
 void nes_ppu_dump_regs(nes_ppu_t *nes_ppu)
 {
-    printf("ctrl: %x mask: %x status: %x oamaddr: %x oamdata: %x scroll: %x addr: %x data: %x oamdma: %x pixel: %d scanline %d\n", 
+    debug_print("ctrl: %x mask: %x status: %x oamaddr: %x oamdata: %x scroll: %x addr: %x data: %x oamdma: %x pixel: %d scanline %d\n", 
             nes_ppu->regs->ctrl, nes_ppu->regs->mask, nes_ppu->regs->status, nes_ppu->regs->oamaddr, 
             nes_ppu->regs->oamdata, nes_ppu->regs->scroll, nes_ppu->regs->addr, nes_ppu->regs->data, *nes_ppu->memmap->cpu_mem_map.mem_virt[0x4014],
             nes_ppu->current_pixel, nes_ppu->current_scan_line);

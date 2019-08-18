@@ -1,11 +1,10 @@
 #include <stdio.h>
+#include <nes.h>
 #include <memory.h>
 #include <string.h>
 
-#define DEBUG 0
-
 #define debug_print(fmt, ...) \
-            do { if (DEBUG) printf(fmt, __VA_ARGS__); } while (0)
+            do { if (DEBUG_MEMORY) printf(fmt, __VA_ARGS__); } while (0)
 
 static void nes_cpu_memmap_init(nes_cpu_memmap_t *memmap)
 {
