@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include <memory.h>
 
+#define PPU_STATUS_FRAME_READY (1 << 0)
+#define PPU_STATUS_NMI (1 << 1)
+
 typedef struct __attribute__((packed)) ppu_regs_s
 {
     // $2000
@@ -78,7 +81,7 @@ void nes_ppu_write_oam_data(nes_memmap_t *memmap, uint8_t val);
 uint8_t nes_ppu_read_oam_data(nes_memmap_t *memmap);
 
 void nes_ppu_init(nes_ppu_t *nes_ppu, nes_memmap_t *memmap);
-void nes_ppu_run(nes_ppu_t *nes_ppu);
+uint8_t nes_ppu_run(nes_ppu_t *nes_ppu);
 void nes_ppu_dump_regs(nes_ppu_t *nes_ppu);
 
 #endif

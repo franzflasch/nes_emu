@@ -2,6 +2,7 @@
 #define CARTRIDGE_H
 
 #include <stdint.h>
+#include <memory.h>
 
 #define ERR_FILE_NOT_EXIST              (1)
 #define ERR_NES_FILE_HEADER_READ_FAILED (2)
@@ -19,11 +20,11 @@ typedef struct nes_cartridge_s
     uint8_t *chr_rom;
 
     /* Mem interface */
-    uint8_t **memory;
+    nes_memmap_t *memmap;
 
 } nes_cartridge_t;
 
-int nes_cart_load_rom(nes_cartridge_t *nes_cart, uint8_t **mem_interface, char *rom);
+int nes_cart_load_rom(nes_cartridge_t *nes_cart, nes_memmap_t *memmap, char *rom);
 void nes_cart_print_rom_metadata(nes_cartridge_t *nes_cart);
 
 #endif
