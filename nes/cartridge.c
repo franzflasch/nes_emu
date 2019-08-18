@@ -2,22 +2,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define PRG_LOCATION0 0x8000
-#define PRG_LOCATION1 0xC000
+#define CPU_PRG_LOCATION0 0x8000
+#define CPU_PRG_LOCATION1 0xC000
 
-static void memory_write_byte(nes_cartridge_t *nes_cart, uint16_t addr, uint8_t data) 
+#define PPU_PATTERN_TABLE0_LOCATION 0x0000
+#define PPU_PATTERN_TABLE1_LOCATION 0x1000
+
+static void memory_write_byte_cpu(nes_cartridge_t *nes_cart, uint16_t addr, uint8_t data) 
 {
-    *nes_cart->memory[addr] = data;
+    *nes_cart->memmap->cpu_mem_map.mem_virt[addr] = data;
 }
 
-int nes_cart_load_rom(nes_cartridge_t *nes_cart, uint8_t **mem_interface, char *rom)
+static void memory_write_byte_ppu(nes_cartridge_t *nes_cart, uint16_t addr, uint8_t data) 
+{
+    *nes_cart->memmap->ppu_mem_map.mem_virt[addr] = data;
+}
+
+int nes_cart_load_rom(nes_cartridge_t *nes_cart, nes_memmap_t *memmap, char *rom)
 {
     FILE *fp;
     int i = 0;
     uint8_t tmp = 0;
 
     /* At first set the memory interface */
-    nes_cart->memory = mem_interface;
+    nes_cart->memmap = memmap;
 
     fp = fopen(rom,"r");
     if(fp == NULL) 
@@ -51,8 +59,8 @@ int nes_cart_load_rom(nes_cartridge_t *nes_cart, uint8_t **mem_interface, char *
         if(fread(&tmp, sizeof(uint8_t), 1, fp) != 1) 
             printf("Err fread\n");
 
-        memory_write_byte(nes_cart, PRG_LOCATION0+i, tmp);
-        memory_write_byte(nes_cart, PRG_LOCATION1+i, tmp);
+        memory_write_byte_cpu(nes_cart, CPU_PRG_LOCATION0+i, tmp);
+        memory_write_byte_cpu(nes_cart, CPU_PRG_LOCATION1+i, tmp);
     }
 
     // if(fread(nes_cart->prg_rom, sizeof(uint8_t), (size_t)nes_cart->prg_rom_size, fp) != (size_t)nes_cart->prg_rom_size) 
@@ -60,17 +68,29 @@ int nes_cart_load_rom(nes_cartridge_t *nes_cart, uint8_t **mem_interface, char *
     //     return ERR_PRG_ROM_LOAD_FAILED;
     // }
 
-    nes_cart->chr_rom = (uint8_t *)malloc((size_t)nes_cart->chr_rom_size);
-    if(fread(nes_cart->chr_rom, sizeof(uint8_t), (size_t)nes_cart->chr_rom_size, fp) != (size_t)nes_cart->chr_rom_size) 
-    {
-        return ERR_CHR_ROM_LOAD_FAILED;
-    }
+    // nes_cart->chr_rom = (uint8_t *)malloc((size_t)nes_cart->chr_rom_size);
+    // if(fread(nes_cart->chr_rom, sizeof(uint8_t), (size_t)nes_cart->chr_rom_size, fp) != (size_t)nes_cart->chr_rom_size) 
+    // {
+    //     return ERR_CHR_ROM_LOAD_FAILED;
+    // }
 
     for(i=0;i<nes_cart->chr_rom_size;i++)
     {
-        printf("%02x ", nes_cart->chr_rom[i]);
-        if((i%8)==7) printf("\n");
+        if(fread(&tmp, sizeof(uint8_t), 1, fp) != 1) 
+        {
+            printf("Err fread chr rom\n");
+            while(1);
+        }
+
+        memory_write_byte_ppu(nes_cart, PPU_PATTERN_TABLE0_LOCATION+i, tmp);
+        memory_write_byte_ppu(nes_cart, PPU_PATTERN_TABLE1_LOCATION+i, tmp);
     }
+
+    // for(i=0;i<nes_cart->chr_rom_size;i++)
+    // {
+    //     printf("%02x ", nes_cart->chr_rom[i]);
+    //     if((i%8)==7) printf("\n");
+    // }
     //exit(0);
 
 

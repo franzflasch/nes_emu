@@ -22,6 +22,8 @@ int init_allegro(void);
 void draw_color_pallete(ppu_color_pallete_2C02_t *color, uint8_t x_pos, uint8_t y_pos);
 int render(void);
 
+#if 0
+
 int main(int argc, char *argv[])
 {
     static nes_memmap_t nes_mem;
@@ -65,7 +67,7 @@ int main(int argc, char *argv[])
 
 
     /* load rom */
-    if(nes_cart_load_rom(&nes_cart, nes_mem.cpu_mem_map.mem_virt, argv[1]) != 0)
+    if(nes_cart_load_rom(&nes_cart, &nes_mem, argv[1]) != 0)
     {
         printf("ROM does not exist\n");
         exit(-2);
@@ -99,25 +101,45 @@ int main(int argc, char *argv[])
         printf("addr: 0x%x val: 0x%x ptr: 0x%p\n", i, *nes_mem.cpu_mem_map.mem_virt[i], nes_mem.cpu_mem_map.mem_virt[i]);
     }
 
+    uint8_t nmi = 0;
+
     /* do some test cycles */
     for(i=0;i<100000;i++)
     //for(;;)
     {
+        if(nmi)
         cpu_clocks = nes_cpu_run(&nes_cpu);
         //if( i>0 &&  ((i%100) == 0)) nes_cpu_interrupt(&nes_cpu);
+
+        nmi = 0;
 
         /* the ppu runs at a  3 times higher clock rate than the cpu
            so we need to give the ppu some clocks here to catchup */
         for(ppu_clock_index=0;ppu_clock_index<(3*cpu_clocks);ppu_clock_index++)
-            nes_ppu_run(&nes_ppu);
+            nmi |= nes_ppu_run(&nes_ppu);
 
         nes_ppu_dump_regs(&nes_ppu);
     }
 
     /* Nametable 0 contents */
-    for(i=0x2000;i<0x23c0;i++)
+    for(i=0x2000;i<0x23FF;i++)
     {
         printf("Nametable 0: %x\n", *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
+    }
+
+    for(i=0x2400;i<0x27FF;i++)
+    {
+        printf("Nametable 1: %x\n", *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
+    }
+
+    for(i=0x2800;i<0x2BFF;i++)
+    {
+        printf("Nametable 2: %x\n", *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
+    }
+
+    for(i=0x2C00;i<0x2FFF;i++)
+    {
+        printf("Nametable 3: %x\n", *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
     }
 
     for(i=0x3F00;i<0x3F1F;i++)
@@ -190,8 +212,75 @@ int main(int argc, char *argv[])
 
 int init_allegro(void)
 {
+    return 0;
+}
+
+#endif
+
+void draw_color_pallete(ppu_color_pallete_2C02_t *color, uint8_t x_pos, uint8_t y_pos)
+{
+    al_set_target_bitmap(color_pallete);
+    al_put_pixel(x_pos, y_pos, al_map_rgb(color->r, color->g, color->b));
+}
+
+int main(int argc, char *argv[])
+{
+    int i = 0;
+    static nes_memmap_t nes_mem;
+    static nes_ppu_t nes_ppu;
+    static nes_cpu_t nes_cpu;
+    static nes_cartridge_t nes_cart;
+    uint32_t cpu_clocks = 0;
+    uint32_t ppu_clock_index = 0;
+    uint8_t ppu_status = 0;
+
+    if(argc != 2)
+    {
+        printf("Please specify rom file\n");
+        exit(-1);
+    }
+
+    /* init memory map */
+    nes_memmap_init(&nes_mem);
+
+    /* init ppu */
+    nes_ppu_init(&nes_ppu, &nes_mem);
+
+
+    /* load rom */
+    if(nes_cart_load_rom(&nes_cart, &nes_mem, argv[1]) != 0)
+    {
+        printf("ROM does not exist\n");
+        exit(-2);
+    }
+    nes_cart_print_rom_metadata(&nes_cart);
+
+    /* init cpu */
+    nes_cpu_init(&nes_cpu, &nes_mem);
+
+
+
+
+
+    const float FPS = 60;
+    const int SCREEN_W = 256*5;
+    const int SCREEN_H = 240*5;
+
+    ALLEGRO_DISPLAY *display = NULL;
+    ALLEGRO_EVENT_QUEUE *event_queue = NULL;
+    ALLEGRO_TIMER *timer = NULL;
+
+    bool redraw = true;
+
     if(!al_init()) {
         fprintf(stderr, "failed to initialize allegro!\n");
+        return -1;
+    }
+
+    display = al_create_display(SCREEN_W, SCREEN_H);
+    if(!display) {
+        fprintf(stderr, "failed to create display!\n");
+        al_destroy_timer(timer);
         return -1;
     }
 
@@ -203,34 +292,6 @@ int init_allegro(void)
 
     al_set_target_bitmap(color_pallete);
     al_clear_to_color(al_map_rgb(0, 0, 0));
-
-    return 0;
-}
-
-void draw_color_pallete(ppu_color_pallete_2C02_t *color, uint8_t x_pos, uint8_t y_pos)
-{
-    al_set_target_bitmap(color_pallete);
-    al_put_pixel(x_pos, y_pos, al_map_rgb(color->r, color->g, color->b));
-}
-
-int render(void)
-{
-    const float FPS = 60;
-    const int SCREEN_W = 256*3;
-    const int SCREEN_H = 240*3;
-
-    ALLEGRO_DISPLAY *display = NULL;
-    ALLEGRO_EVENT_QUEUE *event_queue = NULL;
-    ALLEGRO_TIMER *timer = NULL;
-
-    bool redraw = true;
-
-    display = al_create_display(SCREEN_W, SCREEN_H);
-    if(!display) {
-        fprintf(stderr, "failed to create display!\n");
-        al_destroy_timer(timer);
-        return -1;
-    }
 
     al_set_target_bitmap(al_get_backbuffer(display));
 
@@ -256,17 +317,74 @@ int render(void)
     al_flip_display();
     al_start_timer(timer);
 
+
+
     while(1)
     {
         ALLEGRO_EVENT ev;
         al_wait_for_event(event_queue, &ev);
 
         if(ev.type == ALLEGRO_EVENT_TIMER) {
-            //al_set_target_bitmap(color_pallete);
-            //al_clear_to_color(al_map_rgb(color->r, color->g, color->b));
-            //al_draw_scaled_bitmap(scaled_color_pallete, 0, 0, 32, 32, 50, 50, 124, 124, 0);
-            //al_put_pixel(0, 0, al_map_rgb(color->r, color->g, color->b));
-            // al_put_pixel(20, 20, al_map_rgb(255,255,255));
+            /* do some test cycles */
+            //for(i=0;i<100000;i++)
+            for(;;)
+            {
+                if(ppu_status & PPU_STATUS_NMI) nes_cpu_nmi(&nes_cpu);
+                cpu_clocks = nes_cpu_run(&nes_cpu);
+
+                ppu_status = 0;
+
+                /* ppu is initialized after ~30000 ticks */
+                if((nes_cpu.num_cycles*3) > 30000)
+                {
+                    /* the ppu runs at a  3 times higher clock rate than the cpu
+                    so we need to give the ppu some clocks here to catchup */
+                    for(ppu_clock_index=0;ppu_clock_index<(3*cpu_clocks);ppu_clock_index++)
+                        ppu_status |= nes_ppu_run(&nes_ppu);
+                }
+
+                nes_ppu_dump_regs(&nes_ppu);
+
+                if(ppu_status & PPU_STATUS_FRAME_READY) break;
+            }
+
+            /* Nametable 0 contents */
+            for(i=0x2000;i<0x23FF;i++)
+            {
+                printf("Nametable 0: %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
+            }
+
+            for(i=0x2400;i<0x27FF;i++)
+            {
+                printf("Nametable 1: %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
+            }
+
+            for(i=0x2800;i<0x2BFF;i++)
+            {
+                printf("Nametable 2: %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
+            }
+
+            for(i=0x2C00;i<0x2FFF;i++)
+            {
+                printf("Nametable 3: %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
+            }
+
+            for(i=0x3F00;i<0x3F1F;i++)
+            {
+                printf("Color Pallete %x: %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
+            }
+
+            /* Draw color pallete */
+            al_set_target_bitmap(color_pallete);
+            int tmp = 0;
+            for(i=0x3F00;i<=0x3F1F;i++)
+            {
+                if(((i%4) == 0) && (i > 0x3F00)) tmp++;
+                al_put_pixel(i%4, tmp, 
+                             al_map_rgb(color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[i]].r,
+                             color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[i]].g,
+                             color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[i]].b));
+            }
 
             redraw = true;
         }
@@ -292,8 +410,6 @@ int render(void)
 
     return 0;
 }
-
-
 
 #if 0
 int main(int argc, char **argv)
