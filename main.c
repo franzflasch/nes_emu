@@ -352,6 +352,18 @@ int main(int argc, char *argv[])
                 if(ppu_status & PPU_STATUS_FRAME_READY) break;
             }
 
+            /* Pattern table 0 contents */
+            for(i=0x0000;i<0x0FFF;i++)
+            {
+                debug_print("Pattern 0: %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
+            }
+
+            /* Pattern table 1 contents */
+            for(i=0x1000;i<0x1FFF;i++)
+            {
+                debug_print("Pattern 1: %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
+            }
+
             /* Nametable 0 contents */
             for(i=0x2000;i<0x23FF;i++)
             {
