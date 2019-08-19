@@ -39,6 +39,41 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
 
     uint8_t ppu_ret_status = 0;
 
+    /* FIXME: This is just for testing!! sprite 0 hit has to be implemented properly! */
+    if((nes_ppu->current_scan_line == 1) && (nes_ppu->current_pixel == 1))
+    {
+        nes_ppu->regs->status |= (1 << 6);
+    }
+    else if((nes_ppu->current_scan_line == 241) && (nes_ppu->current_pixel == 1))
+    {
+        nes_ppu->regs->status |= (1 << 7);
+
+        if(nes_ppu->regs->ctrl & (1 << 7))
+            ppu_ret_status |= PPU_STATUS_NMI;
+    }
+    else if((nes_ppu->current_scan_line == 261) && (nes_ppu->current_pixel == 1))
+    {
+        nes_ppu->regs->status &= ~(1 << 7);
+        nes_ppu->regs->status &= ~(1 << 6);
+    }
+    else if((nes_ppu->current_scan_line == 240) && (nes_ppu->current_pixel >= 257) && (nes_ppu->current_pixel <= 320))
+    {
+        nes_ppu->regs->oamaddr = 0;
+    }
+
+    nes_ppu->current_pixel++;
+    if(nes_ppu->current_pixel >= 340)
+    {
+        nes_ppu->current_pixel = 0;
+        nes_ppu->current_scan_line++;
+        if(nes_ppu->current_scan_line >= 262)
+        {
+            nes_ppu->current_scan_line = 0;
+            ppu_ret_status |= PPU_STATUS_FRAME_READY;
+        }
+    }
+
+    /* Register read and write handling */
     if( nes_ppu->memmap->last_reg_accessed &&
         ( 
             ( 
@@ -110,44 +145,6 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
 
         nes_ppu->memmap->last_reg_accessed = 0;
         nes_ppu->memmap->last_reg_read_write = 0;
-    }
-
-
-    /* FIXME: This is just for testing!! sprite 0 hit has to be implemented properly! */
-    if((nes_ppu->current_scan_line == 1) && (nes_ppu->current_pixel == 1))
-    {
-        nes_ppu->regs->status |= (1 << 6);
-    }
-
-    if((nes_ppu->current_scan_line == 241) && (nes_ppu->current_pixel == 1))
-    {
-        nes_ppu->regs->status |= (1 << 7);
-
-        if(nes_ppu->regs->ctrl & (1 << 7))
-            ppu_ret_status |= PPU_STATUS_NMI;
-    }
-
-    if((nes_ppu->current_scan_line == 261) && (nes_ppu->current_pixel == 1))
-    {
-        nes_ppu->regs->status &= ~(1 << 7);
-        nes_ppu->regs->status &= ~(1 << 6);
-    }
-
-    if((nes_ppu->current_scan_line == 240) && (nes_ppu->current_pixel >= 257) && (nes_ppu->current_pixel <= 320))
-    {
-        nes_ppu->regs->oamaddr = 0;
-    }
-
-    nes_ppu->current_pixel++;
-    if(nes_ppu->current_pixel >= 340)
-    {
-        nes_ppu->current_pixel = 0;
-        nes_ppu->current_scan_line++;
-        if(nes_ppu->current_scan_line >= 262)
-        {
-            nes_ppu->current_scan_line = 0;
-            ppu_ret_status |= PPU_STATUS_FRAME_READY;
-        }
     }
 
     return ppu_ret_status;
