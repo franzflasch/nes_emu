@@ -8,12 +8,8 @@
 #include <cpu.h>
 #include <cartridge.h>
 
-#include <allegro5/allegro.h>
-
 #define debug_print(fmt, ...) \
             do { if (DEBUG_MAIN) printf(fmt, __VA_ARGS__); } while (0)
-
-ALLEGRO_BITMAP *color_pallete = NULL;
 
 ppu_color_pallete_2C02_t color_pallete_2C02[] = {
     { 84, 84, 84}, {  0, 30,116}, {  8, 16,144}, { 48,  0,136}, { 68,  0,100}, { 92,  0, 48}, { 84,  4,  0}, { 60, 24,  0}, { 32, 42,  0}, {  8, 58,  0}, {  0, 64,  0}, {  0, 60,  0}, {  0, 50, 60}, {  0,  0,  0}, {  0,  0,  0}, {  0,  0,  0},
@@ -22,210 +18,7 @@ ppu_color_pallete_2C02_t color_pallete_2C02[] = {
     {236,238,236}, {168,204,236}, {188,188,236}, {212,178,236}, {236,174,236}, {236,174,212}, {236,180,176}, {228,196,144}, {204,210,120}, {180,222,120}, {168,226,144}, {152,226,180}, {160,214,228}, {160,162,160}, {  0,  0,  0}, {  0,  0,  0}
 };
 
-int init_allegro(void);
-void draw_color_pallete(ppu_color_pallete_2C02_t *color, uint8_t x_pos, uint8_t y_pos);
-int render(void);
-
-#if 0
-
-int main(int argc, char *argv[])
-{
-    static nes_memmap_t nes_mem;
-
-    static nes_ppu_t nes_ppu;
-    static nes_cpu_t nes_cpu;
-    static nes_cartridge_t nes_cart;
-
-    uint32_t cpu_clocks = 0;
-    
-    uint32_t ppu_clock_index = 0;
-
-    if(argc != 2)
-    {
-        printf("Please specify rom file\n");
-        exit(-1);
-    }
-
-
-    /* init memory map */
-    nes_memmap_init(&nes_mem);
-
-    /* init ppu */
-    nes_ppu_init(&nes_ppu, &nes_mem);
-
-    // /* Do some mem tests */
-    // printf("addr: 0x%x val: 0x%x\n", 0x2003, *nes_mem.cpu_mem_map.mem_virt[0x2003]);
-    // nes_ppu_write_oam_data(&nes_mem, 0x42);
-    // nes_ppu_write_oam_data(&nes_mem, 0x42);
-    // nes_ppu_write_oam_data(&nes_mem, 0x42);
-    // nes_ppu_write_oam_data(&nes_mem, 0x42);
-    // nes_ppu_write_oam_data(&nes_mem, 0x42);
-    // printf("addr: 0x%x val: 0x%x\n", 0x2003, *nes_mem.cpu_mem_map.mem_virt[0x2003]);
-
-    // printf("addr: 0x%x val: 0x%x\n", 0x00, nes_mem.ppu_mem_map.oam_data[0x00]);
-    // printf("addr: 0x%x val: 0x%x\n", 0x01, nes_mem.ppu_mem_map.oam_data[0x01]);
-    // printf("addr: 0x%x val: 0x%x\n", 0x02, nes_mem.ppu_mem_map.oam_data[0x02]);
-    // printf("addr: 0x%x val: 0x%x\n", 0x03, nes_mem.ppu_mem_map.oam_data[0x03]);
-    // printf("addr: 0x%x val: 0x%x\n", 0x04, nes_mem.ppu_mem_map.oam_data[0x04]);
-    // printf("addr: 0x%x val: 0x%x\n", 0x05, nes_mem.ppu_mem_map.oam_data[0x05]);
-
-
-    /* load rom */
-    if(nes_cart_load_rom(&nes_cart, &nes_mem, argv[1]) != 0)
-    {
-        printf("ROM does not exist\n");
-        exit(-2);
-    }
-    nes_cart_print_rom_metadata(&nes_cart);
-
-    /* init cpu */
-    nes_cpu_init(&nes_cpu, &nes_mem);
-
-    // // /* Do some first tests */
-    // // *nes_mem.mem_virt[0x0000] = 0x42;
-    // // printf("addr: 0x%x val: 0x%x\n", 0x0000, *nes_mem.mem_virt[0x0000]);
-    // // printf("addr: 0x%x val: 0x%x\n", 0x0800, *nes_mem.mem_virt[0x0800]);
-    // // printf("addr: 0x%x val: 0x%x\n", 0x1000, *nes_mem.mem_virt[0x1000]);
-    // // printf("addr: 0x%x val: 0x%x\n", 0x1800, *nes_mem.mem_virt[0x1800]);
-
-    // // *nes_mem.mem_virt[0x2000] = 0xAB;
-    // // printf("addr: 0x%x val: 0x%x\n", 0x2000, *nes_mem.mem_virt[0x2000]);
-    // // printf("addr: 0x%x val: 0x%x\n", 0x2008, *nes_mem.mem_virt[0x2008]);
-    // // printf("addr: 0x%x val: 0x%x\n", 0x2010, *nes_mem.mem_virt[0x2010]);
-    // // printf("addr: 0x%x val: 0x%x\n", 0x2018, *nes_mem.mem_virt[0x2018]);
-
-    int i = 0;
-    for(i=0x8000;i<0xBFFF;i++)
-    {
-        printf("addr: 0x%x val: 0x%x ptr: 0x%p\n", i, *nes_mem.cpu_mem_map.mem_virt[i], nes_mem.cpu_mem_map.mem_virt[i]);
-    }
-
-    for(i=0xC000;i<0xFFFF;i++)
-    {
-        printf("addr: 0x%x val: 0x%x ptr: 0x%p\n", i, *nes_mem.cpu_mem_map.mem_virt[i], nes_mem.cpu_mem_map.mem_virt[i]);
-    }
-
-    uint8_t nmi = 0;
-
-    /* do some test cycles */
-    for(i=0;i<100000;i++)
-    //for(;;)
-    {
-        if(nmi)
-        cpu_clocks = nes_cpu_run(&nes_cpu);
-        //if( i>0 &&  ((i%100) == 0)) nes_cpu_interrupt(&nes_cpu);
-
-        nmi = 0;
-
-        /* the ppu runs at a  3 times higher clock rate than the cpu
-           so we need to give the ppu some clocks here to catchup */
-        for(ppu_clock_index=0;ppu_clock_index<(3*cpu_clocks);ppu_clock_index++)
-            nmi |= nes_ppu_run(&nes_ppu);
-
-        nes_ppu_dump_regs(&nes_ppu);
-    }
-
-    /* Nametable 0 contents */
-    for(i=0x2000;i<0x23FF;i++)
-    {
-        printf("Nametable 0: %x\n", *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
-    }
-
-    for(i=0x2400;i<0x27FF;i++)
-    {
-        printf("Nametable 1: %x\n", *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
-    }
-
-    for(i=0x2800;i<0x2BFF;i++)
-    {
-        printf("Nametable 2: %x\n", *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
-    }
-
-    for(i=0x2C00;i<0x2FFF;i++)
-    {
-        printf("Nametable 3: %x\n", *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
-    }
-
-    for(i=0x3F00;i<0x3F1F;i++)
-    {
-        printf("Color Pallete %x: %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
-    }
-
-    // *nes_cpu.memmap->cpu_mem_map.mem_virt[0x2000] = 0x42;
-    // *nes_cpu.memmap->cpu_mem_map.mem_virt[0x2001] = 0x43;
-    // printf("ppuctrl: %x %x\n", nes_ppu.regs->ctrl, *nes_cpu.memmap->cpu_mem_map.mem_virt[0x2000]);
-    // printf("ppumask: %x %x\n", nes_ppu.regs->mask, *nes_cpu.memmap->cpu_mem_map.mem_virt[0x2001]);
-
-
-    // *nes_ppu.memmap->ppu_mem_map.mem_virt[0x3F10] = 0x42;
-    // *nes_ppu.memmap->ppu_mem_map.mem_virt[0x3F14] = 0x43;
-    // printf("0x3F00 mirror: %x %x\n", *nes_ppu.memmap->ppu_mem_map.mem_virt[0x3F00], *nes_ppu.memmap->ppu_mem_map.mem_virt[0x3F10]);
-    // printf("0x3F04 mirror: %x %x\n", *nes_ppu.memmap->ppu_mem_map.mem_virt[0x3F04], *nes_ppu.memmap->ppu_mem_map.mem_virt[0x3F14]);
-
-    /* Testresults are stored at 0x2 and 0x3 according to doc of nestest rom
-     * if both registers are 0 everything should be fine
-     */
-    printf("test results: %x %x\n", *nes_mem.cpu_mem_map.mem_virt[0x2], *nes_mem.cpu_mem_map.mem_virt[0x3]);
-
-    //init_display(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f00]]);
-    printf("Color pallette value %x\n", *nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f01]);
-
-    init_allegro();
-
-    /* Background */
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f00]], 0, 0);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f01]], 1, 0);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f02]], 2, 0);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f03]], 3, 0);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f04]], 0, 1);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f05]], 1, 1);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f06]], 2, 1);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f07]], 3, 1);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f08]], 0, 2);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f09]], 1, 2);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f0A]], 2, 2);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f0B]], 3, 2);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f0C]], 0, 3);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f0D]], 1, 3);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f0E]], 2, 3);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f0F]], 3, 3);
-
-    /* Sprites */
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f10]], 0, 4);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f11]], 1, 4);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f12]], 2, 4);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f13]], 3, 4);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f14]], 0, 5);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f15]], 1, 5);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f16]], 2, 5);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f17]], 3, 5);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f18]], 0, 6);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f19]], 1, 6);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f1A]], 2, 6);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f1B]], 3, 6);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f1C]], 0, 7);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f1D]], 1, 7);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f1E]], 2, 7);
-    draw_color_pallete(&color_pallete_2C02[*nes_ppu.memmap->ppu_mem_map.mem_virt[0x3f1F]], 3, 7);
-
-    render();
-
-    // return 0;
-}
-
-
-int init_allegro(void)
-{
-    return 0;
-}
-
-#endif
-
-void draw_color_pallete(ppu_color_pallete_2C02_t *color, uint8_t x_pos, uint8_t y_pos)
-{
-    al_set_target_bitmap(color_pallete);
-    al_put_pixel(x_pos, y_pos, al_map_rgb(color->r, color->g, color->b));
-}
+#include <allegro5/allegro.h>
 
 int main(int argc, char *argv[])
 {
@@ -267,12 +60,15 @@ int main(int argc, char *argv[])
 
     /* FIXME: TURN OFF debug prints if setting FPS to a high value otherwise won't work */
     const float FPS = 5;
-    const int SCREEN_W = 256*5;
-    const int SCREEN_H = 240*5;
+    const int SCREEN_W = 256*4;
+    const int SCREEN_H = 240*4;
 
     ALLEGRO_DISPLAY *display = NULL;
     ALLEGRO_EVENT_QUEUE *event_queue = NULL;
     ALLEGRO_TIMER *timer = NULL;
+    ALLEGRO_BITMAP *color_pallete = NULL;
+    ALLEGRO_BITMAP *nes_screen = NULL;
+    ALLEGRO_COLOR tmp_color = al_map_rgb(0,0,0);
 
     bool redraw = true;
 
@@ -293,8 +89,15 @@ int main(int argc, char *argv[])
         fprintf(stderr, "failed to create color_pallete bitmap!\n");
         return -1;
     }
-
     al_set_target_bitmap(color_pallete);
+    al_clear_to_color(al_map_rgb(0, 0, 0));
+
+    nes_screen = al_create_bitmap(256, 240);
+    if(!nes_screen) {
+        fprintf(stderr, "failed to create nes_screen bitmap!\n");
+        return -1;
+    }
+    al_set_target_bitmap(nes_screen);
     al_clear_to_color(al_map_rgb(0, 0, 0));
 
     al_set_target_bitmap(al_get_backbuffer(display));
@@ -352,43 +155,59 @@ int main(int argc, char *argv[])
                 if(ppu_status & PPU_STATUS_FRAME_READY) break;
             }
 
-            /* Pattern table 0 contents */
-            for(i=0x0000;i<0x0FFF;i++)
+            int pixel_col_index = 0;
+            int pixel_row_index = 0;
+            system("clear");
+            al_set_target_bitmap(nes_screen);
+            for(pixel_row_index=0;pixel_row_index<40;pixel_row_index++)
             {
-                debug_print("Pattern 0: %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
+                for(pixel_col_index=0;pixel_col_index<256;pixel_col_index++)
+                {
+                    //printf("%s",nes_ppu.screen_bitmap[pixel_col_index][pixel_row_index] ? "." : " ");
+                    tmp_color.r = (double)nes_ppu.screen_bitmap[pixel_col_index][pixel_row_index];
+                    al_put_pixel(pixel_col_index, pixel_row_index, tmp_color);
+                }
+                //printf("\n");
             }
 
-            /* Pattern table 1 contents */
-            for(i=0x1000;i<0x1FFF;i++)
-            {
-                debug_print("Pattern 1: %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
-            }
 
-            /* Nametable 0 contents */
-            for(i=0x2000;i<0x23FF;i++)
-            {
-                debug_print("Nametable 0: %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
-            }
+            // /* Pattern table 0 contents */
+            // for(i=0x0000;i<0x0FFF;i++)
+            // {
+            //     debug_print("Pattern 0: %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
+            // }
 
-            for(i=0x2400;i<0x27FF;i++)
-            {
-                debug_print("Nametable 1: %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
-            }
+            // /* Pattern table 1 contents */
+            // for(i=0x1000;i<0x1FFF;i++)
+            // {
+            //     debug_print("Pattern 1: %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
+            // }
 
-            for(i=0x2800;i<0x2BFF;i++)
-            {
-                debug_print("Nametable 2: %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
-            }
+            // /* Nametable 0 contents */
+            // for(i=0x2000;i<0x23FF;i++)
+            // {
+            //     debug_print("Nametable 0: %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
+            // }
 
-            for(i=0x2C00;i<0x2FFF;i++)
-            {
-                debug_print("Nametable 3: %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
-            }
+            // for(i=0x2400;i<0x27FF;i++)
+            // {
+            //     debug_print("Nametable 1: %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
+            // }
 
-            for(i=0x3F00;i<0x3F1F;i++)
-            {
-                debug_print("Color Pallete %x: %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
-            }
+            // for(i=0x2800;i<0x2BFF;i++)
+            // {
+            //     debug_print("Nametable 2: %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
+            // }
+
+            // for(i=0x2C00;i<0x2FFF;i++)
+            // {
+            //     debug_print("Nametable 3: %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
+            // }
+
+            // for(i=0x3F00;i<0x3F1F;i++)
+            // {
+            //     debug_print("Color Pallete %x: %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
+            // }
 
             /* Draw color pallete */
             al_set_target_bitmap(color_pallete);
@@ -413,7 +232,7 @@ int main(int argc, char *argv[])
             redraw = false;
             al_set_target_bitmap(al_get_backbuffer(display));
             al_clear_to_color(al_map_rgb(0,0,0));
-            //al_draw_bitmap(color_pallete, 0, 0, 0);
+            al_draw_bitmap(nes_screen, 300, 300, 0);
             al_draw_scaled_bitmap(color_pallete, 0, 0, 4, 8, 0, 0, 128, 256, 0);
             al_flip_display();
         }
@@ -426,6 +245,7 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+
 
 #if 0
 int main(int argc, char **argv)
@@ -537,3 +357,40 @@ int main(int argc, char **argv)
     return 0;
 }
 #endif
+
+
+// /* triangle.c */
+// #include <curses.h>
+// #include <stdlib.h>
+// #define ITERMAX 10000
+
+// int main(void)
+// {
+//     int maxlines;
+//     //int maxcols;
+
+//     /* initialize curses */
+//     initscr();
+//     cbreak();
+//     noecho();
+//     clear();
+
+//     /* initialize triangle */
+//     maxlines = LINES - 1;
+//     //maxcols = COLS - 1;
+
+//     start_color();
+//     init_color(COLOR_RED, 800, 0, 200);
+//     init_pair(1, COLOR_RED, COLOR_RED); /* create foreground / background combination */
+//     attron(COLOR_PAIR(1)); /* use the above combination */
+//     printw("   ");
+//     attroff(COLOR_PAIR(1)); /* turn color off */
+
+
+//     /* done */
+//     mvaddstr(maxlines, 0, "Press any key to quit");
+//     refresh();
+//     getch();
+//     endwin();
+//     exit(0);
+// }

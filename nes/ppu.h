@@ -66,6 +66,8 @@ typedef struct nes_ppu_s
 	uint16_t current_scan_line;
     uint16_t current_pixel;
 
+    uint8_t screen_bitmap[256][240];
+
 } nes_ppu_t;
 
 /* NTSC color pallete */
