@@ -5,9 +5,6 @@
 #define CPU_PRG_LOCATION0 0x8000
 #define CPU_PRG_LOCATION1 0xC000
 
-#define PPU_PATTERN_TABLE0_LOCATION 0x0000
-#define PPU_PATTERN_TABLE1_LOCATION 0x1000
-
 static void memory_write_byte_cpu(nes_cartridge_t *nes_cart, uint16_t addr, uint8_t data) 
 {
     *nes_cart->memmap->cpu_mem_map.mem_virt[addr] = data;
@@ -42,17 +39,7 @@ int nes_cart_load_rom(nes_cartridge_t *nes_cart, nes_memmap_t *memmap, char *rom
         nes_cart->prg_rom_size = 16 * 1024 * nes_cart->header[4];
         nes_cart->chr_rom_size = 8  * 1024 * nes_cart->header[5];
         nes_cart->prg_ram_size = 8  * 1024 * nes_cart->header[8];
-        //if(nes_cart->chr_rom_size == 0) { nes_cart->chr_rom_size = 8 * 1024; }
-        //if(nes_cart->prg_ram_size == 0) { nes_cart->prg_ram_size = 8 * 1024; }
     }
-
-    // nes_cart->prg_rom = (uint8_t *)malloc((size_t)nes_cart->prg_rom_size);
-    // nes_cart->chr_rom = (uint8_t *)malloc((size_t)nes_cart->chr_rom_size);
-
-    // if(nes_cart->prg_rom == NULL || nes_cart->chr_rom == NULL) 
-    // {
-    //     return ERR_MEMORY_ALLOCATE_FAILED;
-    // }
 
     for(i=0;i<nes_cart->prg_rom_size;i++)
     {
@@ -63,17 +50,6 @@ int nes_cart_load_rom(nes_cartridge_t *nes_cart, nes_memmap_t *memmap, char *rom
         memory_write_byte_cpu(nes_cart, CPU_PRG_LOCATION1+i, tmp);
     }
 
-    // if(fread(nes_cart->prg_rom, sizeof(uint8_t), (size_t)nes_cart->prg_rom_size, fp) != (size_t)nes_cart->prg_rom_size) 
-    // {
-    //     return ERR_PRG_ROM_LOAD_FAILED;
-    // }
-
-    // nes_cart->chr_rom = (uint8_t *)malloc((size_t)nes_cart->chr_rom_size);
-    // if(fread(nes_cart->chr_rom, sizeof(uint8_t), (size_t)nes_cart->chr_rom_size, fp) != (size_t)nes_cart->chr_rom_size) 
-    // {
-    //     return ERR_CHR_ROM_LOAD_FAILED;
-    // }
-
     for(i=0;i<nes_cart->chr_rom_size;i++)
     {
         if(fread(&tmp, sizeof(uint8_t), 1, fp) != 1) 
@@ -82,8 +58,8 @@ int nes_cart_load_rom(nes_cartridge_t *nes_cart, nes_memmap_t *memmap, char *rom
             while(1);
         }
 
-        memory_write_byte_ppu(nes_cart, PPU_PATTERN_TABLE0_LOCATION+i, tmp);
-        memory_write_byte_ppu(nes_cart, PPU_PATTERN_TABLE1_LOCATION+i, tmp);
+        memory_write_byte_ppu(nes_cart, PPU_MEM_PATTERN_TABLE0_OFFSET+i, tmp);
+        memory_write_byte_ppu(nes_cart, PPU_MEM_PATTERN_TABLE1_OFFSET+i, tmp);
     }
 
     // for(i=0;i<nes_cart->chr_rom_size;i++)
