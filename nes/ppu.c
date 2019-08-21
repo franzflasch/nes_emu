@@ -6,9 +6,10 @@
 #define debug_print(fmt, ...) \
             do { if (DEBUG_PPU) printf(fmt, __VA_ARGS__); } while (0)
 
-#define PPU_CTRL_REG_GEN_NMI           (1 << 7)
-#define PPU_CTRL_SPRITE_SIZE           (1 << 5)
-#define PPU_CTRL_BG_PATTERN_TABLE_ADDR (1 << 4)
+#define PPU_CTRL_REG_GEN_NMI           (0x1 << 7)
+#define PPU_CTRL_SPRITE_SIZE           (0x1 << 5)
+#define PPU_CTRL_BG_PATTERN_TABLE_ADDR (0x1 << 4)
+#define PPU_CTRL_BASE_NAME_TABLE_ADDR  (0x3 << 0)
 
 #define PPU_STATUS_REG_VBLANK  (1 << 7)
 #define PPU_STATUS_SPRITE0_HIT (1 << 6)
@@ -38,6 +39,11 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
     uint8_t tile_low_bit, tile_high_bit = 0;
     uint8_t pattern_low_val, pattern_high_val = 0;
     uint8_t current_tile_pixel_col, current_tile_pixel_row = 0;
+    uint16_t attribute_table_load_addr = 0;
+    uint8_t attribute_bits = 0;
+    uint8_t attribute_bit_quadrant = 0;
+    uint8_t color_pallete_address = 0;
+    ppu_color_pallete_t color_pallete_value = { 0 };
 
     /* FIXME: This is just for testing!! sprite 0 hit has to be implemented properly! */
     if((nes_ppu->current_scan_line == 1) && (nes_ppu->current_pixel == 1))
@@ -156,10 +162,8 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
 
     if((nes_ppu->current_scan_line < 240) && (nes_ppu->current_pixel < 256))
     {
-        name_table_load_addr = PPU_MEM_NAME_TABLE0_OFFSET;
-
         /* calculate tile row */
-        name_table_load_addr += (nes_ppu->current_pixel/8) + (0x20 * (nes_ppu->current_scan_line/8));
+        name_table_load_addr = ( PPU_MEM_NAME_TABLE0_OFFSET | ((nes_ppu->regs->ctrl & PPU_CTRL_BASE_NAME_TABLE_ADDR) << 10) ) + (nes_ppu->current_pixel/8) + (0x20 * (nes_ppu->current_scan_line/8));
 
         current_tile_pixel_row = nes_ppu->current_scan_line%8;
 
@@ -174,12 +178,39 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
         /* now calc current pixel */
         current_tile_pixel_col = 7-(nes_ppu->current_pixel%8);
 
-        tile_low_bit = pattern_low_val & (1 << current_tile_pixel_col) ? 1 : 0;
-        tile_high_bit = pattern_high_val & (1 << current_tile_pixel_col) ? 1 : 0;
+        tile_low_bit = (pattern_low_val >> current_tile_pixel_col) & 1;// (1 << current_tile_pixel_col) ? 1 : 0;
+        tile_high_bit = (pattern_high_val >> current_tile_pixel_col) & 1;// << current_tile_pixel_col) ? 1 : 0;
 
-        (void)tile_low_bit;
-        (void)tile_high_bit;
-        nes_ppu->screen_bitmap[nes_ppu->current_pixel + (256*nes_ppu->current_scan_line)] = tile_low_bit ? 0xFFFFFFFF : 0;
+        /* Get attribute bits */
+        attribute_bit_quadrant = (((nes_ppu->current_scan_line%16)/8) << 1 ) | ((nes_ppu->current_pixel%16)/8);
+        attribute_bit_quadrant *= 2;
+        attribute_table_load_addr = (PPU_MEM_ATTRIBUTE_TABLE0_OFFSET | ((nes_ppu->regs->ctrl & PPU_CTRL_BASE_NAME_TABLE_ADDR) << 10) ) + (0x8 * (nes_ppu->current_scan_line/32)) + (nes_ppu->current_pixel/32);
+        attribute_bits = (*nes_ppu->memmap->ppu_mem_map.mem_virt[attribute_table_load_addr] & (0x3 << attribute_bit_quadrant)) >> attribute_bit_quadrant;
+
+        color_pallete_address = *nes_ppu->memmap->ppu_mem_map.mem_virt[PPU_MEM_PALETTE_RAM_OFFSET + ((attribute_bits << 2) | (tile_high_bit<<1) | tile_low_bit)];
+        color_pallete_value = color_pallete_2C02[color_pallete_address];
+
+        // if(nes_ppu->current_pixel == 40 && nes_ppu->current_scan_line == 88)
+        // {
+        //     printf("%d %d %x %x %x %x\n", attribute_bit_quadrant, *nes_ppu->memmap->ppu_mem_map.mem_virt[attribute_table_load_addr], attribute_table_load_addr, *nes_ppu->memmap->ppu_mem_map.mem_virt[attribute_table_load_addr],  color_pallete_address, PPU_MEM_PALETTE_RAM_OFFSET + ((attribute_bits << 2) | (tile_high_bit<<1) | tile_low_bit));
+        // }
+
+        // (void)attribute_table_load_addr;
+        // (void)attribute_bits;
+        // (void)color_pallete_address;
+        // if(color_pallete_address > sizeof(color_pallete_2C02)/sizeof(color_pallete_2C02[0]))
+        // {
+        //     printf("error color pallete out of bounds\n");
+        //     while(1);
+        // }
+        // (void)tile_low_bit;
+        // (void)tile_high_bit;
+        nes_ppu->screen_bitmap[nes_ppu->current_pixel + (256*nes_ppu->current_scan_line)] = (0xFF << 24) | 
+                                                                                            (color_pallete_value.r << 16) | 
+                                                                                            (color_pallete_value.g << 8) | 
+                                                                                            (color_pallete_value.b); //tile_low_bit ? 0xFFFFFFFF : 0;
+        //nes_ppu->screen_bitmap[nes_ppu->current_pixel + (256*nes_ppu->current_scan_line)] = tile_high_bit ? 0xFFFFFFFF : 0;
+        //printf("ppu_pixel: %x\n", color_pallete_address);
         // printf("ppu_pixel: nt addr:%x nt val:%x pt addr:%x pt val:%x tile_col:%d:%d tile_row:%d col:%d row:%d\n",
         //         name_table_load_addr,
         //         *nes_ppu->memmap->ppu_mem_map.mem_virt[name_table_load_addr],
