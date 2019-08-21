@@ -20,6 +20,6 @@ include_directories(nes_emu ${SDL2_INCLUDE_DIRS})
 include_directories(nes)
 #indicate the entry point for the executable
 add_executable (nes_emu main.c nes/memory.c nes/cpu.c nes/cartridge.c nes/ppu.c)
-target_link_libraries(nes_emu -lallegro ${SDL2_LIBRARIES})
+target_link_libraries(nes_emu ${SDL2_LIBRARIES})
 
 install (TARGETS nes_emu DESTINATION bin)
