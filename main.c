@@ -447,8 +447,8 @@ int main(int argc, char *argv[])
     SDL_Window *window = SDL_CreateWindow("nes_emu",
                                           SDL_WINDOWPOS_UNDEFINED,
                                           SDL_WINDOWPOS_UNDEFINED,
-                                          256*6,
-                                          240*6,
+                                          256*2,
+                                          240*2,
                                           SDL_WINDOW_OPENGL);
     if (window == NULL)
     {
@@ -498,6 +498,12 @@ int main(int argc, char *argv[])
 
             if(ppu_status & PPU_STATUS_FRAME_READY) break;
         }
+
+        // /* Nametable 0 contents */
+        // for(int i=0x2000;i<0x23FF;i++)
+        // {
+        //     debug_print("Nametable 0: %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
+        // }
 
         SDL_UpdateTexture(texture, NULL, nes_ppu.screen_bitmap, 256 * sizeof(Uint32));
 

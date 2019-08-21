@@ -101,12 +101,11 @@ int nes_cart_load_rom(nes_cartridge_t *nes_cart, nes_memmap_t *memmap, char *rom
 
 void nes_cart_print_rom_metadata(nes_cartridge_t *nes_cart) 
 {
-    const uint16_t MAPPER_TYPE_NROM = 0x1A;
-
     printf("==============================================\n");
     printf("ROM Metadata:\n");
-    printf("Sinature: %c%c%c %s\n", nes_cart->header[0], nes_cart->header[1], nes_cart->header[2], nes_cart->header[3] == MAPPER_TYPE_NROM ? "NROM" : "Unknown");
-    printf("Type: %d\n", nes_cart->header[5]);
+    printf("Sinature: %c%c%c %c\n", nes_cart->header[0], nes_cart->header[1], nes_cart->header[2], nes_cart->header[3]);
+    printf("Flags 6: %d\n", nes_cart->header[6]);
+    printf("Flags 7: %d\n", nes_cart->header[7]);
     printf("PRG ROM Size: %d B\n", nes_cart->prg_rom_size);
     printf("CHR ROM Size: %d B\n", nes_cart->chr_rom_size);
     printf("PRG RAM Size: %d B\n", nes_cart->prg_ram_size);
