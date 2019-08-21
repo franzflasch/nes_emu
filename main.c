@@ -11,12 +11,7 @@
 #define debug_print(fmt, ...) \
             do { if (DEBUG_MAIN) printf(fmt, __VA_ARGS__); } while (0)
 
-ppu_color_pallete_2C02_t color_pallete_2C02[] = {
-    { 84, 84, 84}, {  0, 30,116}, {  8, 16,144}, { 48,  0,136}, { 68,  0,100}, { 92,  0, 48}, { 84,  4,  0}, { 60, 24,  0}, { 32, 42,  0}, {  8, 58,  0}, {  0, 64,  0}, {  0, 60,  0}, {  0, 50, 60}, {  0,  0,  0}, {  0,  0,  0}, {  0,  0,  0},
-    {152,150,152}, {  8, 76,196}, { 48, 50,236}, { 92, 30,228}, {136, 20,176}, {160, 20,100}, {152, 34, 32}, {120, 60,  0}, { 84, 90,  0}, { 40,114,  0}, {  8,124,  0}, {  0,118, 40}, {  0,102,120}, {  0,  0,  0}, {  0,  0,  0}, {  0,  0,  0},
-    {236,238,236}, { 76,154,236}, {120,124,236}, {176, 98,236}, {228, 84,236}, {236, 88,180}, {236,106,100}, {212,136, 32}, {160,170,  0}, {116,196,  0}, { 76,208, 32}, { 56,204,108}, { 56,180,204}, { 60, 60, 60}, {  0,  0,  0}, {  0,  0,  0},
-    {236,238,236}, {168,204,236}, {188,188,236}, {212,178,236}, {236,174,236}, {236,174,212}, {236,180,176}, {228,196,144}, {204,210,120}, {180,222,120}, {168,226,144}, {152,226,180}, {160,214,228}, {160,162,160}, {  0,  0,  0}, {  0,  0,  0}
-};
+#if 0
 
 #include <allegro5/allegro.h>
 
@@ -59,7 +54,7 @@ int main(int argc, char *argv[])
 
 
     /* FIXME: TURN OFF debug prints if setting FPS to a high value otherwise won't work */
-    const float FPS = 5;
+    const float FPS = 1;
     const int SCREEN_W = 256*4;
     const int SCREEN_H = 240*4;
 
@@ -159,7 +154,7 @@ int main(int argc, char *argv[])
             int pixel_row_index = 0;
             system("clear");
             al_set_target_bitmap(nes_screen);
-            for(pixel_row_index=0;pixel_row_index<40;pixel_row_index++)
+            for(pixel_row_index=0;pixel_row_index<240;pixel_row_index++)
             {
                 for(pixel_col_index=0;pixel_col_index<256;pixel_col_index++)
                 {
@@ -245,7 +240,7 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-
+#endif
 
 #if 0
 int main(int argc, char **argv)
@@ -394,3 +389,137 @@ int main(int argc, char **argv)
 //     endwin();
 //     exit(0);
 // }
+
+
+#include <SDL2/SDL.h>
+
+#define FPS 60
+#define FPS_UPDATE_TIME_MS (1000/FPS)
+
+int main(int argc, char *argv[])
+{
+    //int i = 0;
+    static nes_memmap_t nes_mem;
+    static nes_ppu_t nes_ppu;
+    static nes_cpu_t nes_cpu;
+    static nes_cartridge_t nes_cart;
+    uint32_t cpu_clocks = 0;
+    uint32_t ppu_clock_index = 0;
+    uint8_t ppu_status = 0;
+
+    if(argc != 2)
+    {
+        printf("Please specify rom file\n");
+        exit(-1);
+    }
+
+    /* init memory map */
+    nes_memmap_init(&nes_mem);
+
+    /* init ppu */
+    nes_ppu_init(&nes_ppu, &nes_mem);
+
+
+    /* load rom */
+    if(nes_cart_load_rom(&nes_cart, &nes_mem, argv[1]) != 0)
+    {
+        printf("ROM does not exist\n");
+        exit(-2);
+    }
+    nes_cart_print_rom_metadata(&nes_cart);
+
+    /* init cpu */
+    nes_cpu_init(&nes_cpu, &nes_mem);
+
+
+
+
+    unsigned int lastTime = 0, currentTime;
+    //Uint32 pixels[256*240] = {0};
+
+    if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
+    {
+        printf("Failed to initialise SDL\n");
+        return -1;
+    }
+
+    // Create a window
+    SDL_Window *window = SDL_CreateWindow("nes_emu",
+                                          SDL_WINDOWPOS_UNDEFINED,
+                                          SDL_WINDOWPOS_UNDEFINED,
+                                          256*6,
+                                          240*6,
+                                          SDL_WINDOW_OPENGL);
+    if (window == NULL)
+    {
+        SDL_Log("Could not create a window: %s", SDL_GetError());
+        return -1;
+    }
+
+    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    if (renderer == NULL)
+    {
+        SDL_Log("Could not create a renderer: %s", SDL_GetError());
+        return -1;
+    }
+
+    SDL_Texture * texture = SDL_CreateTexture(renderer,
+            SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, 256, 240);
+
+    while (1)
+    {
+        // Get the next event
+        SDL_Event event;
+        if (SDL_PollEvent(&event))
+        {
+            if (event.type == SDL_QUIT)
+            {
+                break;
+            }
+        }
+
+        for(;;)
+        {
+            if(ppu_status & PPU_STATUS_NMI) nes_cpu_nmi(&nes_cpu);
+            cpu_clocks = nes_cpu_run(&nes_cpu);
+
+            ppu_status = 0;
+
+            /* ppu is initialized after ~30000 ticks */
+            if((nes_cpu.num_cycles*3) > 30000)
+            {
+                /* the ppu runs at a  3 times higher clock rate than the cpu
+                so we need to give the ppu some clocks here to catchup */
+                for(ppu_clock_index=0;ppu_clock_index<(3*cpu_clocks);ppu_clock_index++)
+                    ppu_status |= nes_ppu_run(&nes_ppu);
+            }
+
+            nes_ppu_dump_regs(&nes_ppu);
+
+            if(ppu_status & PPU_STATUS_FRAME_READY) break;
+        }
+
+        SDL_UpdateTexture(texture, NULL, nes_ppu.screen_bitmap, 256 * sizeof(Uint32));
+
+        // Randomly change the colour
+        // Uint8 red = rand() % 255;
+        // Uint8 green = rand() % 255;
+        // Uint8 blue = rand() % 255;
+
+        // Fill the screen with the colour
+        //SDL_SetRenderDrawColor(renderer, red, green, blue, 255);
+        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, texture, NULL, NULL);
+
+        while ((currentTime = SDL_GetTicks()) < (lastTime + FPS_UPDATE_TIME_MS));// printf("fast enough\n");
+        lastTime = currentTime;
+        SDL_RenderPresent(renderer);
+    }
+
+    // Tidy up
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+
+    return 0;
+}

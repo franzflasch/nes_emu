@@ -13,6 +13,13 @@
 #define PPU_STATUS_REG_VBLANK  (1 << 7)
 #define PPU_STATUS_SPRITE0_HIT (1 << 6)
 
+ppu_color_pallete_t color_pallete_2C02[] = {
+    { 84, 84, 84}, {  0, 30,116}, {  8, 16,144}, { 48,  0,136}, { 68,  0,100}, { 92,  0, 48}, { 84,  4,  0}, { 60, 24,  0}, { 32, 42,  0}, {  8, 58,  0}, {  0, 64,  0}, {  0, 60,  0}, {  0, 50, 60}, {  0,  0,  0}, {  0,  0,  0}, {  0,  0,  0},
+    {152,150,152}, {  8, 76,196}, { 48, 50,236}, { 92, 30,228}, {136, 20,176}, {160, 20,100}, {152, 34, 32}, {120, 60,  0}, { 84, 90,  0}, { 40,114,  0}, {  8,124,  0}, {  0,118, 40}, {  0,102,120}, {  0,  0,  0}, {  0,  0,  0}, {  0,  0,  0},
+    {236,238,236}, { 76,154,236}, {120,124,236}, {176, 98,236}, {228, 84,236}, {236, 88,180}, {236,106,100}, {212,136, 32}, {160,170,  0}, {116,196,  0}, { 76,208, 32}, { 56,204,108}, { 56,180,204}, { 60, 60, 60}, {  0,  0,  0}, {  0,  0,  0},
+    {236,238,236}, {168,204,236}, {188,188,236}, {212,178,236}, {236,174,236}, {236,174,212}, {236,180,176}, {228,196,144}, {204,210,120}, {180,222,120}, {168,226,144}, {152,226,180}, {160,214,228}, {160,162,160}, {  0,  0,  0}, {  0,  0,  0}
+};
+
 void nes_ppu_init(nes_ppu_t *nes_ppu, nes_memmap_t *memmap)
 {   
     memset(nes_ppu, 0, sizeof(*nes_ppu));
@@ -28,6 +35,9 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
     uint8_t ppu_ret_status = 0;
     uint16_t pattern_table_load_addr = 0;
     uint16_t name_table_load_addr = 0;
+    uint8_t tile_low_bit, tile_high_bit = 0;
+    uint8_t pattern_low_val, pattern_high_val = 0;
+    uint8_t current_tile_pixel_col, current_tile_pixel_row = 0;
 
     /* FIXME: This is just for testing!! sprite 0 hit has to be implemented properly! */
     if((nes_ppu->current_scan_line == 1) && (nes_ppu->current_pixel == 1))
@@ -151,10 +161,25 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
         /* calculate tile row */
         name_table_load_addr += (nes_ppu->current_pixel/8) + (0x20 * (nes_ppu->current_scan_line/8));
 
-        pattern_table_load_addr = (nes_ppu->regs->ctrl & PPU_CTRL_BG_PATTERN_TABLE_ADDR) ? PPU_MEM_PATTERN_TABLE1_OFFSET : PPU_MEM_PATTERN_TABLE0_OFFSET;
-        pattern_table_load_addr += (*nes_ppu->memmap->ppu_mem_map.mem_virt[name_table_load_addr] << 4) + (nes_ppu->current_scan_line%8);
+        current_tile_pixel_row = nes_ppu->current_scan_line%8;
 
-        nes_ppu->screen_bitmap[nes_ppu->current_pixel][nes_ppu->current_scan_line] = (*nes_ppu->memmap->ppu_mem_map.mem_virt[pattern_table_load_addr] & (1 << (7-(nes_ppu->current_pixel%8)))) ? 1 : 0;
+        /* get pattern from table */
+        pattern_table_load_addr = (nes_ppu->regs->ctrl & PPU_CTRL_BG_PATTERN_TABLE_ADDR) ? PPU_MEM_PATTERN_TABLE1_OFFSET : PPU_MEM_PATTERN_TABLE0_OFFSET;
+        pattern_table_load_addr += (*nes_ppu->memmap->ppu_mem_map.mem_virt[name_table_load_addr] << 4) + current_tile_pixel_row;
+
+        /* get low and high pattern bits */
+        pattern_low_val = *nes_ppu->memmap->ppu_mem_map.mem_virt[pattern_table_load_addr];
+        pattern_high_val = *nes_ppu->memmap->ppu_mem_map.mem_virt[pattern_table_load_addr+8];
+
+        /* now calc current pixel */
+        current_tile_pixel_col = 7-(nes_ppu->current_pixel%8);
+
+        tile_low_bit = pattern_low_val & (1 << current_tile_pixel_col) ? 1 : 0;
+        tile_high_bit = pattern_high_val & (1 << current_tile_pixel_col) ? 1 : 0;
+
+        (void)tile_low_bit;
+        (void)tile_high_bit;
+        nes_ppu->screen_bitmap[nes_ppu->current_pixel + (256*nes_ppu->current_scan_line)] = tile_low_bit ? 0xFFFFFFFF : 0;
         // printf("ppu_pixel: nt addr:%x nt val:%x pt addr:%x pt val:%x tile_col:%d:%d tile_row:%d col:%d row:%d\n",
         //         name_table_load_addr,
         //         *nes_ppu->memmap->ppu_mem_map.mem_virt[name_table_load_addr],
