@@ -428,6 +428,9 @@ int main(int argc, char *argv[])
     }
     nes_cart_print_rom_metadata(&nes_cart);
 
+    /* Set nametable mirroring after loading the cartridge */
+    nes_ppu_memmap_set_nt_mirror(&nes_mem.ppu_mem_map);
+
     /* init cpu */
     nes_cpu_init(&nes_cpu, &nes_mem);
 
@@ -447,8 +450,8 @@ int main(int argc, char *argv[])
     SDL_Window *window = SDL_CreateWindow("nes_emu",
                                           SDL_WINDOWPOS_UNDEFINED,
                                           SDL_WINDOWPOS_UNDEFINED,
-                                          256*4,
-                                          240*4,
+                                          256*1,
+                                          240*1,
                                           SDL_WINDOW_OPENGL);
     if (window == NULL)
     {

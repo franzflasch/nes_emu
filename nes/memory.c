@@ -191,6 +191,53 @@ static void nes_ppu_memmap_init(nes_ppu_memmap_t *memmap)
     }
 }
 
+void nes_ppu_memmap_set_nt_mirror(nes_ppu_memmap_t *memmap)
+{
+    uint32_t offset = 0;
+    uint32_t i = 0;
+
+    if(memmap->mirroring == PPU_NAMETABLE_MIRRORING_H)
+    {
+        /* mirror name table 1 to name table 0 */
+        offset = PPU_MEM_PATTERN_TABLE0_SIZE + PPU_MEM_PATTERN_TABLE1_SIZE;
+        for(i=PPU_MEM_NAME_TABLE1_OFFSET;i<(PPU_MEM_NAME_TABLE1_OFFSET+PPU_MEM_NAME_TABLE1_SIZE);i++)
+        {
+            debug_print("PPU_MEM_NAME_TABLE1 virt: %x phys: %x\n", i, offset);
+            memmap->mem_virt[i] = &memmap->mem_phys[offset];
+            offset++;
+        }
+
+        /* mirror name table 3 to name table 2 */
+        offset = PPU_MEM_PATTERN_TABLE0_SIZE + PPU_MEM_PATTERN_TABLE1_SIZE + PPU_MEM_NAME_TABLE0_SIZE + PPU_MEM_NAME_TABLE1_SIZE;
+        for(i=PPU_MEM_NAME_TABLE3_OFFSET;i<(PPU_MEM_NAME_TABLE3_OFFSET+PPU_MEM_NAME_TABLE3_SIZE);i++)
+        {
+            debug_print("PPU_MEM_NAME_TABLE3 virt: %x phys: %x\n", i, offset);
+            memmap->mem_virt[i] = &memmap->mem_phys[offset];
+            offset++;
+        }
+    }
+    else /* PPU_NAMETABLE_MIRRORING_V */
+    {
+        /* mirror name table 2 to name table 0 */
+        offset = PPU_MEM_PATTERN_TABLE0_SIZE + PPU_MEM_PATTERN_TABLE1_SIZE;
+        for(i=PPU_MEM_NAME_TABLE2_OFFSET;i<(PPU_MEM_NAME_TABLE2_OFFSET+PPU_MEM_NAME_TABLE2_SIZE);i++)
+        {
+            debug_print("PPU_MEM_NAME_TABLE2 virt: %x phys: %x\n", i, offset);
+            memmap->mem_virt[i] = &memmap->mem_phys[offset];
+            offset++;
+        }
+
+        /* mirror name table 3 to name table 1 */
+        offset = PPU_MEM_PATTERN_TABLE0_SIZE + PPU_MEM_PATTERN_TABLE1_SIZE + PPU_MEM_NAME_TABLE0_SIZE;
+        for(i=PPU_MEM_NAME_TABLE3_OFFSET;i<(PPU_MEM_NAME_TABLE3_OFFSET+PPU_MEM_NAME_TABLE3_SIZE);i++)
+        {
+            debug_print("PPU_MEM_NAME_TABLE3 virt: %x phys: %x\n", i, offset);
+            memmap->mem_virt[i] = &memmap->mem_phys[offset];
+            offset++;
+        }
+    }
+}
+
 void nes_memmap_init(nes_memmap_t *memmap)
 {
     nes_ppu_memmap_init(&memmap->ppu_mem_map);

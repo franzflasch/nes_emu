@@ -66,6 +66,10 @@ typedef struct nes_ppu_s
 	uint16_t current_scan_line;
     uint16_t current_pixel;
 
+    uint16_t scroll_access_cycle;
+    uint16_t scroll_offset_x;
+    uint16_t scroll_offset_y;
+
     uint32_t screen_bitmap[256*240];
 
 } nes_ppu_t;
