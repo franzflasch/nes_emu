@@ -52,6 +52,23 @@
 #define CPU_MEM_PPU_DATA_REGISTER           0x2007
 #define CPU_MEM_PPU_OAMDMA_REGISTER         0x4014
 
+
+#define REG_ACCESS_READ 1
+#define REG_ACCESS_WRITE 2
+
+typedef struct nes_cpu_memmap_s
+{
+    /* Only OxC808 bytes are actually used by the nes:
+     * 0x10000−0x800−0x800−0x800−0x1ff8 = 0xC808
+     */
+    uint8_t mem_phys[CPU_MEM_PHYS_SIZE];
+
+    /* This will be the 'virtual' mem map to the physical memory*/
+    uint8_t *mem_virt[CPU_MEM_VIRT_SIZE];
+
+} nes_cpu_memmap_t;
+
+
 /* PPU MEMORY */
 #define PPU_MEM_PATTERN_TABLE0_OFFSET       0x0000
 #define PPU_MEM_PATTERN_TABLE0_SIZE         0x1000
@@ -99,21 +116,8 @@
 #define PPU_MEM_OAMD_SIZE 0x0100
 
 
-
-#define REG_ACCESS_READ 1
-#define REG_ACCESS_WRITE 2
-
-typedef struct nes_cpu_memmap_s
-{
-    /* Only OxC808 bytes are actually used by the nes:
-     * 0x10000−0x800−0x800−0x800−0x1ff8 = 0xC808
-     */
-    uint8_t mem_phys[CPU_MEM_PHYS_SIZE];
-
-    /* This will be the 'virtual' mem map to the physical memory*/
-    uint8_t *mem_virt[CPU_MEM_VIRT_SIZE];
-
-} nes_cpu_memmap_t;
+#define PPU_NAMETABLE_MIRRORING_H 0
+#define PPU_NAMETABLE_MIRRORING_V 1
 
 typedef struct nes_ppu_memmap_s
 {
@@ -128,6 +132,9 @@ typedef struct nes_ppu_memmap_s
     /* OAM Data Memory */
     uint8_t oam_data[PPU_MEM_OAMD_SIZE];
 
+    /* nametable mirroring */
+    uint8_t mirroring;
+
 } nes_ppu_memmap_t;
 
 typedef struct nes_memmap_s
@@ -140,5 +147,6 @@ typedef struct nes_memmap_s
 } nes_memmap_t;
 
 void nes_memmap_init(nes_memmap_t *memmap);
+void nes_ppu_memmap_set_nt_mirror(nes_ppu_memmap_t *memmap);
 
 #endif

@@ -62,6 +62,8 @@ int nes_cart_load_rom(nes_cartridge_t *nes_cart, nes_memmap_t *memmap, char *rom
         memory_write_byte_ppu(nes_cart, PPU_MEM_PATTERN_TABLE1_OFFSET+i, tmp);
     }
 
+    memmap->ppu_mem_map.mirroring = nes_cart->header[6] & 0x1;
+
     // for(i=0;i<nes_cart->chr_rom_size;i++)
     // {
     //     printf("%02x ", nes_cart->chr_rom[i]);
@@ -77,21 +79,25 @@ int nes_cart_load_rom(nes_cartridge_t *nes_cart, nes_memmap_t *memmap, char *rom
 
 void nes_cart_print_rom_metadata(nes_cartridge_t *nes_cart) 
 {
+    uint8_t mapper = 0;
+
+    mapper = (nes_cart->header[7] & 0xF0) | ((nes_cart->header[6] & 0xFF) >> 4);
+
     printf("==============================================\n");
     printf("ROM Metadata:\n");
-    printf("Sinature: %c%c%c %c\n", nes_cart->header[0], nes_cart->header[1], nes_cart->header[2], nes_cart->header[3]);
+    printf("Sinature: %c%c%c\n", nes_cart->header[0], nes_cart->header[1], nes_cart->header[2]);
     printf("Flags 6: %d\n", nes_cart->header[6]);
+    printf("Mirroring: %s\n", (nes_cart->header[6] & (1<<0)) ? "vertical" : "horizontal" );
     printf("Flags 7: %d\n", nes_cart->header[7]);
+    printf("Mapper %x\n", mapper);
     printf("PRG ROM Size: %d B\n", nes_cart->prg_rom_size);
     printf("CHR ROM Size: %d B\n", nes_cart->chr_rom_size);
     printf("PRG RAM Size: %d B\n", nes_cart->prg_ram_size);
     printf("==============================================\n\n");
-}
 
-// void nes_cart_exit(nes_cartridge_t *nes_cart) 
-// {
-//     free(nes_cart->prg_rom);
-//     free(nes_cart->chr_rom);
-//     nes_cart->prg_rom = NULL;
-//     nes_cart->chr_rom = NULL;
-// }
+    if(mapper != 0)
+    {
+        printf("Mapper %x is not supported\n", mapper);
+        //while(1);
+    }
+}
