@@ -42,7 +42,8 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
     uint16_t attribute_table_load_addr = 0;
     uint8_t attribute_bits = 0;
     uint8_t attribute_bit_quadrant = 0;
-    uint8_t color_pallete_address = 0;
+    uint16_t color_pallete_address = 0;
+    uint8_t color_pallete_index = 0;
     ppu_color_pallete_t color_pallete_value = { 0 };
 
     /* FIXME: This is just for testing!! sprite 0 hit has to be implemented properly! */
@@ -182,18 +183,35 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
         tile_high_bit = (pattern_high_val >> current_tile_pixel_col) & 1;// << current_tile_pixel_col) ? 1 : 0;
 
         /* Get attribute bits */
-        attribute_bit_quadrant = (((nes_ppu->current_scan_line%16)/8) << 1 ) | ((nes_ppu->current_pixel%16)/8);
+        attribute_bit_quadrant = (((nes_ppu->current_scan_line%32)/16) << 1 ) | ((nes_ppu->current_pixel%32)/16);
         attribute_bit_quadrant *= 2;
         attribute_table_load_addr = (PPU_MEM_ATTRIBUTE_TABLE0_OFFSET | ((nes_ppu->regs->ctrl & PPU_CTRL_BASE_NAME_TABLE_ADDR) << 10) ) + (0x8 * (nes_ppu->current_scan_line/32)) + (nes_ppu->current_pixel/32);
-        attribute_bits = (*nes_ppu->memmap->ppu_mem_map.mem_virt[attribute_table_load_addr] & (0x3 << attribute_bit_quadrant)) >> attribute_bit_quadrant;
+        attribute_bits = (*nes_ppu->memmap->ppu_mem_map.mem_virt[attribute_table_load_addr] >> attribute_bit_quadrant) & 0x3;
 
-        color_pallete_address = *nes_ppu->memmap->ppu_mem_map.mem_virt[PPU_MEM_PALETTE_RAM_OFFSET + ((attribute_bits << 2) | (tile_high_bit<<1) | tile_low_bit)];
-        color_pallete_value = color_pallete_2C02[color_pallete_address];
+        color_pallete_address = PPU_MEM_PALETTE_RAM_OFFSET + (attribute_bits << 2) + ((tile_high_bit<<1) | tile_low_bit);
+        /* use backdrop color (0x3F00) */
+        if((color_pallete_address == 0x3F04) || (color_pallete_address == 0x3F08) || (color_pallete_address == 0x3F0C)) color_pallete_address = 0x3F00;
+        //color_pallete_address += (tile_high_bit<<1) | tile_low_bit;
 
-        // if(nes_ppu->current_pixel == 40 && nes_ppu->current_scan_line == 88)
-        // {
-        //     printf("%d %d %x %x %x %x\n", attribute_bit_quadrant, *nes_ppu->memmap->ppu_mem_map.mem_virt[attribute_table_load_addr], attribute_table_load_addr, *nes_ppu->memmap->ppu_mem_map.mem_virt[attribute_table_load_addr],  color_pallete_address, PPU_MEM_PALETTE_RAM_OFFSET + ((attribute_bits << 2) | (tile_high_bit<<1) | tile_low_bit));
-        // }
+        color_pallete_index = *nes_ppu->memmap->ppu_mem_map.mem_virt[color_pallete_address];
+        color_pallete_value = color_pallete_2C02[color_pallete_index];
+
+        if(nes_ppu->current_pixel == 1*8 && nes_ppu->current_scan_line == 25*8)
+        {
+            printf("quadrant: %d attr-bits:%x attr-val:%x att-load-addr:%x color-pallete-addr:%x color-pallete-val:%x\n", 
+                    attribute_bit_quadrant, 
+                    attribute_bits,
+                    *nes_ppu->memmap->ppu_mem_map.mem_virt[attribute_table_load_addr], 
+                    attribute_table_load_addr, 
+                    color_pallete_address, 
+                    color_pallete_index);
+            int tmp = 0;
+            for(int i=0x3F00;i<=0x3F1F;i++)
+            {
+                if(((i%4) == 0) && (i > 0x3F00)) tmp++;
+                printf("color palette: %x %x\n", i, *nes_ppu->memmap->ppu_mem_map.mem_virt[i]);
+            }
+        }
 
         // (void)attribute_table_load_addr;
         // (void)attribute_bits;
@@ -203,8 +221,8 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
         //     printf("error color pallete out of bounds\n");
         //     while(1);
         // }
-        // (void)tile_low_bit;
-        // (void)tile_high_bit;
+        (void)tile_low_bit;
+        (void)tile_high_bit;
         nes_ppu->screen_bitmap[nes_ppu->current_pixel + (256*nes_ppu->current_scan_line)] = (0xFF << 24) | 
                                                                                             (color_pallete_value.r << 16) | 
                                                                                             (color_pallete_value.g << 8) | 
