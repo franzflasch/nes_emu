@@ -11,6 +11,8 @@
 #define PPU_CTRL_BG_PATTERN_TABLE_ADDR (0x1 << 4)
 #define PPU_CTRL_BASE_NAME_TABLE_ADDR  (0x3 << 0)
 
+#define PPU_MASK_SHOW_BG  (1 << 3)
+
 #define PPU_STATUS_REG_VBLANK  (1 << 7)
 #define PPU_STATUS_SPRITE0_HIT (1 << 6)
 
@@ -47,7 +49,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
     ppu_color_pallete_t color_pallete_value = { 0 };
 
     /* FIXME: This is just for testing!! sprite 0 hit has to be implemented properly! */
-    if((nes_ppu->current_scan_line == 1) && (nes_ppu->current_pixel == 1))
+    if((nes_ppu->current_scan_line == 30) && (nes_ppu->current_pixel == 90))
     {
         nes_ppu->regs->status |= PPU_STATUS_SPRITE0_HIT;
     }
@@ -113,7 +115,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
 
             if(nes_ppu->memmap->last_reg_accessed == CPU_MEM_PPU_ADDR_REGISTER)
             {
-                if(!nes_ppu->addr_access_cycle)
+                if(!nes_ppu->addr_scroll_access_latch)
                 {
                     nes_ppu->curr_ppu_data_address = nes_ppu->regs->addr << 8;
                 }
@@ -121,7 +123,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
                 {
                     nes_ppu->curr_ppu_data_address |= nes_ppu->regs->addr;
                 }
-                nes_ppu->addr_access_cycle = (nes_ppu->addr_access_cycle + 1) % 2;
+                nes_ppu->addr_scroll_access_latch = (nes_ppu->addr_scroll_access_latch + 1) % 2;
             }
             else if(nes_ppu->memmap->last_reg_accessed == CPU_MEM_PPU_DATA_REGISTER)
             {
@@ -138,7 +140,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
             }
             else if(nes_ppu->memmap->last_reg_accessed == CPU_MEM_PPU_SCROLL_REGISTER)
             {
-                if(!nes_ppu->scroll_access_cycle)
+                if(!nes_ppu->addr_scroll_access_latch)
                 {
                     nes_ppu->scroll_offset_x = nes_ppu->regs->scroll;
                     printf("SCROLLx %d!\n", nes_ppu->scroll_offset_x);
@@ -148,7 +150,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
                     nes_ppu->scroll_offset_y = nes_ppu->regs->scroll;
                     printf("SCROLLy %d!\n", nes_ppu->scroll_offset_y);
                 }
-                nes_ppu->scroll_access_cycle = (nes_ppu->scroll_access_cycle + 1) % 2;
+                nes_ppu->addr_scroll_access_latch = (nes_ppu->addr_scroll_access_latch + 1) % 2;
             }
         }
         /* read */
@@ -157,12 +159,12 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
             debug_print("PPU READ ACCESS!: %x data: %x\n", nes_ppu->memmap->last_reg_accessed, *nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->last_reg_accessed]);
             if(nes_ppu->memmap->last_reg_accessed == CPU_MEM_PPU_STATUS_REGISTER)
             {
-                //nes_ppu->regs->addr = 0;
+                nes_ppu->regs->addr = 0;
                 nes_ppu->regs->status &= ~PPU_STATUS_REG_VBLANK;
                 nes_ppu->curr_ppu_data_address = 0;
-                nes_ppu->addr_access_cycle = 0;
+                nes_ppu->addr_scroll_access_latch = 0;
 
-                nes_ppu->scroll_access_cycle = 0;
+                //nes_ppu->scroll_access_cycle = 0;
                 //nes_ppu->scroll_offset_x = 0;
                 //nes_ppu->scroll_offset_y = 0;
             }
@@ -179,16 +181,42 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
         while(1);
     }
 
-    if((nes_ppu->current_scan_line < 240) && (nes_ppu->current_pixel < 256))
+    static uint16_t last_scroll_x_val = 0;
+
+    if((nes_ppu->current_scan_line < 240) && (nes_ppu->current_pixel < 256) && (nes_ppu->regs->mask & PPU_MASK_SHOW_BG))
     {
         uint16_t current_pixel_x = nes_ppu->current_pixel;// + nes_ppu->scroll_offset_x;
         uint16_t current_pixel_y = nes_ppu->current_scan_line;// + nes_ppu->scroll_offset_y;
+        uint16_t scroll_offset_x = nes_ppu->scroll_offset_x;
 
-        //uint16_t scroll_wrap = ((current_pixel_x+nes_ppu->scroll_offset_x) > 256 ? nes_ppu->scroll_offset_x : current_pixel_x+nes_ppu->scroll_offset_x);
-        uint16_t nt_offset = 0x400; //((current_pixel_x+nes_ppu->scroll_offset_x) > 256 ? ((nes_ppu->regs->ctrl & PPU_CTRL_BASE_NAME_TABLE_ADDR) && 0x1 ) ? 0 : 0x400 : 0);
+        //printf("MASK %x\n", nes_ppu->regs->mask);
+
+        //if(scroll_offset_x > 100) scroll_offset_x = 100;
+
+        //if(scroll_offset_x < last_scroll_x_val)
+        if((nes_ppu->regs->ctrl & PPU_CTRL_BASE_NAME_TABLE_ADDR) && 0x1 )
+        {
+            printf("WHAT!? %x %d %d %x %d %d\n", nes_ppu->regs->mask, scroll_offset_x, last_scroll_x_val, (nes_ppu->regs->ctrl & PPU_CTRL_BASE_NAME_TABLE_ADDR), nes_ppu->current_scan_line, nes_ppu->current_pixel);
+            //scroll_offset_x = last_scroll_x_val;
+            //while(1);
+        }
+        // else 
+            last_scroll_x_val = scroll_offset_x;
+
+        uint16_t current_pixel_with_scroll_offset_x = (current_pixel_x + scroll_offset_x) % 256;
+        uint16_t nt_offset = ((nes_ppu->regs->ctrl & PPU_CTRL_BASE_NAME_TABLE_ADDR) && 0x1 ) ? 0x400 : 0;
+        //scroll_offset_x = ((nes_ppu->regs->ctrl & PPU_CTRL_BASE_NAME_TABLE_ADDR) && 0x1 ) ? 256 : 0;
+        if(nt_offset == 0x0 && ((current_pixel_x+scroll_offset_x) > 255))
+        {
+            nt_offset = 0x400;
+        }
+        else if(nt_offset == 0x400 && ((current_pixel_x+scroll_offset_x) > 255))
+        {
+            nt_offset = 0x0;
+        }
 
         /* calculate tile row */
-        name_table_load_addr = ( PPU_MEM_NAME_TABLE0_OFFSET + nt_offset + (0x20 * ((current_pixel_y)/8) + (current_pixel_x/8) ));
+        name_table_load_addr = ( PPU_MEM_NAME_TABLE0_OFFSET + nt_offset + (0x20 * ((current_pixel_y)/8) + (current_pixel_with_scroll_offset_x/8) ));
         // if((name_table_load_addr >= PPU_MEM_ATTRIBUTE_TABLE0_OFFSET) && (name_table_load_addr < PPU_MEM_NAME_TABLE1_OFFSET))
         // {
         //     name_table_load_addr += 0x40;
@@ -206,15 +234,15 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
         pattern_high_val = *nes_ppu->memmap->ppu_mem_map.mem_virt[pattern_table_load_addr+8];
 
         /* now calc current pixel */
-        current_tile_pixel_col = 7-((current_pixel_x)%8);
+        current_tile_pixel_col = 7-((current_pixel_with_scroll_offset_x)%8);
 
         tile_low_bit = (pattern_low_val >> current_tile_pixel_col) & 1;
         tile_high_bit = (pattern_high_val >> current_tile_pixel_col) & 1;
 
         /* Get attribute bits */
-        attribute_bit_quadrant = (((current_pixel_y%32)/16) << 1 ) | (((current_pixel_x)%32)/16);
+        attribute_bit_quadrant = (((current_pixel_y%32)/16) << 1 ) | (((current_pixel_with_scroll_offset_x)%32)/16);
         attribute_bit_quadrant *= 2;
-        attribute_table_load_addr = (PPU_MEM_ATTRIBUTE_TABLE0_OFFSET + nt_offset + (0x8 * (current_pixel_y/32)) + ((current_pixel_x)/32));
+        attribute_table_load_addr = (PPU_MEM_ATTRIBUTE_TABLE0_OFFSET + nt_offset + (0x8 * (current_pixel_y/32)) + ((current_pixel_with_scroll_offset_x)/32));
         attribute_bits = (*nes_ppu->memmap->ppu_mem_map.mem_virt[attribute_table_load_addr] >> attribute_bit_quadrant) & 0x3;
 
         color_pallete_address = PPU_MEM_PALETTE_RAM_OFFSET + (attribute_bits << 2) + ((tile_high_bit<<1) | tile_low_bit);
@@ -226,29 +254,29 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
         color_pallete_value = color_pallete_2C02[color_pallete_index];
 
         //if(current_pixel_x == 4*8 && current_pixel_y == 0*8)
-        if(name_table_load_addr >= PPU_MEM_NAME_TABLE1_OFFSET && current_pixel_x == 4*8 && current_pixel_y == 0*8)
-        {
-            printf("nt-addr:%x quadrant: %d attr-bits:%x attr-val:%x att-load-addr:%x color-pallete-addr:%x color-pallete-val:%x scrollx:%d scrolly:%d\n", 
-                    name_table_load_addr,
-                    attribute_bit_quadrant, 
-                    attribute_bits,
-                    *nes_ppu->memmap->ppu_mem_map.mem_virt[attribute_table_load_addr], 
-                    attribute_table_load_addr, 
-                    color_pallete_address, 
-                    color_pallete_index, 
-                    nes_ppu->scroll_offset_x,
-                    nes_ppu->scroll_offset_y);
-            // int tmp = 0;
-            // for(int i=0x3F00;i<=0x3F1F;i++)
-            // {
-            //     if(((i%4) == 0) && (i > 0x3F00)) tmp++;
-            //     printf("color palette: %x %x\n", i, *nes_ppu->memmap->ppu_mem_map.mem_virt[i]);
-            // }
-            // for(int i=PPU_MEM_NAME_TABLE1_OFFSET;i<=PPU_MEM_ATTRIBUTE_TABLE1_OFFSET;i++)
-            // {
-            //     printf("nt: %x %x\n", i, *nes_ppu->memmap->ppu_mem_map.mem_virt[i]);
-            // }
-        }
+        // if(name_table_load_addr >= PPU_MEM_NAME_TABLE1_OFFSET && current_pixel_x == 4*8 && current_pixel_y == 0*8)
+        // {
+        //     printf("nt-addr:%x quadrant: %d attr-bits:%x attr-val:%x att-load-addr:%x color-pallete-addr:%x color-pallete-val:%x scrollx:%d scrolly:%d\n", 
+        //             name_table_load_addr,
+        //             attribute_bit_quadrant, 
+        //             attribute_bits,
+        //             *nes_ppu->memmap->ppu_mem_map.mem_virt[attribute_table_load_addr], 
+        //             attribute_table_load_addr, 
+        //             color_pallete_address, 
+        //             color_pallete_index, 
+        //             nes_ppu->scroll_offset_x,
+        //             nes_ppu->scroll_offset_y);
+        //     // int tmp = 0;
+        //     // for(int i=0x3F00;i<=0x3F1F;i++)
+        //     // {
+        //     //     if(((i%4) == 0) && (i > 0x3F00)) tmp++;
+        //     //     printf("color palette: %x %x\n", i, *nes_ppu->memmap->ppu_mem_map.mem_virt[i]);
+        //     // }
+        //     // for(int i=PPU_MEM_NAME_TABLE1_OFFSET;i<=PPU_MEM_ATTRIBUTE_TABLE1_OFFSET;i++)
+        //     // {
+        //     //     printf("nt: %x %x\n", i, *nes_ppu->memmap->ppu_mem_map.mem_virt[i]);
+        //     // }
+        // }
 
         // (void)attribute_table_load_addr;
         // (void)attribute_bits;
@@ -258,12 +286,12 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
         //     printf("error color pallete out of bounds\n");
         //     while(1);
         // }
-        (void)tile_low_bit;
-        (void)tile_high_bit;
+        // (void)tile_low_bit;
+        // (void)tile_high_bit;
         nes_ppu->screen_bitmap[current_pixel_x + (256*current_pixel_y)] = (0xFF << 24) | 
-                                                                                            (color_pallete_value.r << 16) | 
-                                                                                            (color_pallete_value.g << 8) | 
-                                                                                            (color_pallete_value.b); //tile_low_bit ? 0xFFFFFFFF : 0;
+                                                                          (color_pallete_value.r << 16) | 
+                                                                          (color_pallete_value.g << 8) | 
+                                                                          (color_pallete_value.b); //tile_low_bit ? 0xFFFFFFFF : 0;
         //nes_ppu->screen_bitmap[current_pixel_x + (256*current_pixel_y)] = tile_high_bit ? 0xFFFFFFFF : 0;
         //printf("ppu_pixel: %x\n", color_pallete_address);
         // printf("ppu_pixel: nt addr:%x nt val:%x pt addr:%x pt val:%x tile_col:%d:%d tile_row:%d col:%d row:%d\n",
