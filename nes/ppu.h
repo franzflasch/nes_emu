@@ -59,14 +59,13 @@ typedef struct nes_ppu_s
 	nes_memmap_t *memmap;
 	ppu_regs_t *regs;
 
-    uint8_t addr_access_cycle;
+    uint8_t addr_scroll_access_latch;
 
     uint16_t curr_ppu_data_address;
 
 	uint16_t current_scan_line;
     uint16_t current_pixel;
 
-    uint16_t scroll_access_cycle;
     uint16_t scroll_offset_x;
     uint16_t scroll_offset_y;
 
