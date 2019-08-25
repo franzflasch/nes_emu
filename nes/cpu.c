@@ -15,8 +15,13 @@
 #define FLAG_OVERFLOW  0x40
 #define FLAG_NEGATIVE  0x80
 
+uint8_t psg_io_read(void);
+
 static uint8_t memory_read_byte(nes_cpu_t *nes_cpu, uint16_t addr) 
 {
+    /* Controller input must be immediately */
+    if(addr == CONTROLLER_PORT1_REG) return psg_io_read();
+
     nes_cpu->memmap->last_reg_accessed = addr;
     nes_cpu->memmap->last_reg_read_write = REG_ACCESS_READ;
     return (*nes_cpu->memmap->cpu_mem_map.mem_virt[addr]); 

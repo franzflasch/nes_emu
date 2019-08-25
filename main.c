@@ -7,6 +7,7 @@
 #include <ppu.h>
 #include <cpu.h>
 #include <cartridge.h>
+#include <controller.h>
 
 #define debug_print(fmt, ...) \
             do { if (DEBUG_MAIN) printf(fmt, __VA_ARGS__); } while (0)
@@ -396,6 +397,46 @@ int main(int argc, char **argv)
 #define FPS 60
 #define FPS_UPDATE_TIME_MS (1000/FPS)
 
+/* Query a button's state.
+   Returns 1 if button #b is pressed. */
+uint8_t nes_key_state(uint8_t b)
+{
+    const Uint8* keyboard;
+    SDL_PumpEvents();
+    keyboard = SDL_GetKeyboardState(NULL);
+
+    // if (keyboard[SDL_SCANCODE_RETURN]) {
+    //     printf("<RETURN> is pressed.\n");
+    // }
+    // if (keyboard[SDL_SCANCODE_RIGHT] && keyboard[SDL_SCANCODE_UP]) {
+    //     printf("Right and Up Keys Pressed.\n");
+    // }
+
+    switch (b)
+    {
+        case 0: // On / Off
+            return 1;
+        case 1: // A
+            return keyboard[SDL_SCANCODE_A] ? 1 : 0;
+        case 2: // B
+            return keyboard[SDL_SCANCODE_S] ? 1 : 0;
+        case 3: // SELECT
+            return keyboard[SDL_SCANCODE_C] ? 1 : 0;
+        case 4: // START
+            return keyboard[SDL_SCANCODE_RETURN] ? 1 : 0;
+        case 5: // UP
+            return keyboard[SDL_SCANCODE_UP] ? 1 : 0;
+        case 6: // DOWN
+            return keyboard[SDL_SCANCODE_DOWN] ? 1 : 0;
+        case 7: // LEFT
+            return keyboard[SDL_SCANCODE_LEFT] ? 1 : 0;
+        case 8: // RIGHT
+            return keyboard[SDL_SCANCODE_RIGHT] ? 1 : 0;
+        default:
+            return 1;
+    }
+}
+
 int main(int argc, char *argv[])
 {
     //int i = 0;
@@ -450,8 +491,8 @@ int main(int argc, char *argv[])
     SDL_Window *window = SDL_CreateWindow("nes_emu",
                                           SDL_WINDOWPOS_UNDEFINED,
                                           SDL_WINDOWPOS_UNDEFINED,
-                                          256*1,
-                                          240*1,
+                                          256*4,
+                                          240*4,
                                           SDL_WINDOW_OPENGL);
     if (window == NULL)
     {
@@ -486,6 +527,10 @@ int main(int argc, char *argv[])
             if(ppu_status & PPU_STATUS_NMI) nes_cpu_nmi(&nes_cpu);
             cpu_clocks = nes_cpu_run(&nes_cpu);
 
+            controller_run(&nes_mem);
+
+            // ppu_start:
+
             ppu_status = 0;
 
             /* ppu is initialized after ~30000 ticks */
@@ -494,8 +539,16 @@ int main(int argc, char *argv[])
                 /* the ppu runs at a  3 times higher clock rate than the cpu
                 so we need to give the ppu some clocks here to catchup */
                 for(ppu_clock_index=0;ppu_clock_index<(3*cpu_clocks);ppu_clock_index++)
+                {
                     ppu_status |= nes_ppu_run(&nes_ppu);
+                }
             }
+
+            // if(ppu_status & PPU_STATUS_OAM_ACCESS)
+            // {
+            //     cpu_clocks = 514;
+            //     goto ppu_start;
+            // }
 
             nes_ppu_dump_regs(&nes_ppu);
 

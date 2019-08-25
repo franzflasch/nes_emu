@@ -137,6 +137,13 @@ typedef struct nes_ppu_memmap_s
 
 } nes_ppu_memmap_t;
 
+
+#define CONTROLLER_PORT1_REG 0x4016
+#define CONTROLLER_PORT2_REG 0x4017
+
+
+
+
 typedef struct nes_memmap_s
 {
     nes_cpu_memmap_t cpu_mem_map;
