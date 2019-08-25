@@ -6,6 +6,7 @@
 
 #define PPU_STATUS_FRAME_READY (1 << 0)
 #define PPU_STATUS_NMI (1 << 1)
+#define PPU_STATUS_OAM_ACCESS (1 << 2)
 
 typedef struct __attribute__((packed)) ppu_regs_s
 {
@@ -59,15 +60,13 @@ typedef struct nes_ppu_s
 	nes_memmap_t *memmap;
 	ppu_regs_t *regs;
 
-    uint8_t addr_scroll_access_latch;
-
-    uint16_t curr_ppu_data_address;
-
 	uint16_t current_scan_line;
     uint16_t current_pixel;
 
-    uint16_t scroll_offset_x;
-    uint16_t scroll_offset_y;
+    uint8_t internal_w;
+    uint16_t internal_t;
+    uint16_t internal_v;
+    uint8_t internal_x;
 
     uint32_t screen_bitmap[256*240];
 

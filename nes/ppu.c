@@ -48,28 +48,6 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
     uint8_t color_pallete_index = 0;
     ppu_color_pallete_t color_pallete_value = { 0 };
 
-    /* FIXME: This is just for testing!! sprite 0 hit has to be implemented properly! */
-    if((nes_ppu->current_scan_line == 30) && (nes_ppu->current_pixel == 90))
-    {
-        nes_ppu->regs->status |= PPU_STATUS_SPRITE0_HIT;
-    }
-    else if((nes_ppu->current_scan_line == 241) && (nes_ppu->current_pixel == 1))
-    {
-        nes_ppu->regs->status |= PPU_STATUS_REG_VBLANK;
-
-        if(nes_ppu->regs->ctrl & PPU_CTRL_REG_GEN_NMI)
-            ppu_ret_status |= PPU_STATUS_NMI;
-    }
-    else if((nes_ppu->current_scan_line == 261) && (nes_ppu->current_pixel == 1))
-    {
-        nes_ppu->regs->status &= ~PPU_STATUS_REG_VBLANK;
-        nes_ppu->regs->status &= ~PPU_STATUS_SPRITE0_HIT;
-    }
-    else if((nes_ppu->current_scan_line == 240) && (nes_ppu->current_pixel >= 257) && (nes_ppu->current_pixel <= 320))
-    {
-        nes_ppu->regs->oamaddr = 0;
-    }
-
     nes_ppu->current_pixel++;
     if(nes_ppu->current_pixel >= 340)
     {
@@ -80,6 +58,30 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
             nes_ppu->current_scan_line = 0;
             ppu_ret_status |= PPU_STATUS_FRAME_READY;
         }
+    }
+
+    /* FIXME: This is just for testing!! sprite 0 hit has to be implemented properly! */
+    if((nes_ppu->current_scan_line == 30) && (nes_ppu->current_pixel == 90))
+    {
+        nes_ppu->regs->status |= PPU_STATUS_SPRITE0_HIT;
+    }
+    else if((nes_ppu->current_scan_line == 241) && (nes_ppu->current_pixel == 1))
+    {
+        nes_ppu->regs->status |= PPU_STATUS_REG_VBLANK;
+
+        if(nes_ppu->regs->ctrl & PPU_CTRL_REG_GEN_NMI)
+        {
+            ppu_ret_status |= PPU_STATUS_NMI;
+        }
+    }
+    else if((nes_ppu->current_scan_line == 261) && (nes_ppu->current_pixel == 1))
+    {
+        nes_ppu->regs->status &= ~PPU_STATUS_REG_VBLANK;
+        nes_ppu->regs->status &= ~PPU_STATUS_SPRITE0_HIT;
+    }
+    else if((nes_ppu->current_scan_line == 240) && (nes_ppu->current_pixel >= 257) && (nes_ppu->current_pixel <= 320))
+    {
+        nes_ppu->regs->oamaddr = 0;
     }
 
     /* Register read and write handling */
@@ -96,6 +98,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
         if(nes_ppu->memmap->last_reg_accessed == CPU_MEM_PPU_OAMDMA_REGISTER)
         {
             printf("OAMDMA access currently not implemented!\n");
+            ppu_ret_status |= PPU_STATUS_OAM_ACCESS;
             //while(1);
         }
         else
@@ -107,62 +110,79 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
         /* write */
         if(nes_ppu->memmap->last_reg_read_write == REG_ACCESS_WRITE)
         {
-            debug_print("PPU WRITE ACCESS!: %x data: %x\n", nes_ppu->memmap->last_reg_accessed, *nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->last_reg_accessed]);
+            printf("PPU WRITE ACCESS!: %x data: %x\n", nes_ppu->memmap->last_reg_accessed, *nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->last_reg_accessed]);
 
             /* Update least significant bits previously written into a PPU register */
             nes_ppu->regs->status &= (~0x1F);
             nes_ppu->regs->status |= (*nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->last_reg_accessed] & 0x1F);
 
-            if(nes_ppu->memmap->last_reg_accessed == CPU_MEM_PPU_ADDR_REGISTER)
+            if(nes_ppu->memmap->last_reg_accessed == CPU_MEM_PPU_CTRL_REGISTER)
             {
-                if(!nes_ppu->addr_scroll_access_latch)
+                /* Reset vram nametable address */
+                nes_ppu->internal_t &= ~(0x3 << 10);
+                nes_ppu->internal_t |= (nes_ppu->regs->ctrl & PPU_CTRL_BASE_NAME_TABLE_ADDR) << 10;
+            }
+            else if(nes_ppu->memmap->last_reg_accessed == CPU_MEM_PPU_ADDR_REGISTER)
+            {
+                if(!nes_ppu->internal_w)
                 {
-                    nes_ppu->curr_ppu_data_address = nes_ppu->regs->addr << 8;
+                    nes_ppu->internal_t &= ~(0xff << 8);
+                    nes_ppu->internal_t |= (nes_ppu->regs->addr << 8);
+                    /* Clear bit 14 and 15 */
+                    nes_ppu->internal_t &= ~(0x3 << 14);
                 }
                 else
                 {
-                    nes_ppu->curr_ppu_data_address |= nes_ppu->regs->addr;
+                    nes_ppu->internal_t &= ~(0xff);
+                    nes_ppu->internal_t |= (nes_ppu->regs->addr);
+                    nes_ppu->internal_v = nes_ppu->internal_t;
                 }
-                nes_ppu->addr_scroll_access_latch = (nes_ppu->addr_scroll_access_latch + 1) % 2;
+                nes_ppu->internal_w = (nes_ppu->internal_w + 1) % 2;
             }
             else if(nes_ppu->memmap->last_reg_accessed == CPU_MEM_PPU_DATA_REGISTER)
             {
-                if(nes_ppu->curr_ppu_data_address >= PPU_MEM_VIRT_SIZE)
+                if(nes_ppu->internal_v >= PPU_MEM_VIRT_SIZE)
                 {
-                    printf("ILLEGAL ADDRESS: %x\n", nes_ppu->curr_ppu_data_address);
+                    printf("ILLEGAL ADDRESS: %x\n", nes_ppu->internal_v);
                     while(1);
                 }
 
-                *nes_ppu->memmap->ppu_mem_map.mem_virt[nes_ppu->curr_ppu_data_address] = *nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->last_reg_accessed];
+                *nes_ppu->memmap->ppu_mem_map.mem_virt[nes_ppu->internal_v] = *nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->last_reg_accessed];
 
                 /* check address increment bit */
-                nes_ppu->curr_ppu_data_address += (nes_ppu->regs->ctrl & 0x04) ? 32 : 1;
+                nes_ppu->internal_v += (nes_ppu->regs->ctrl & 0x04) ? 32 : 1;
             }
             else if(nes_ppu->memmap->last_reg_accessed == CPU_MEM_PPU_SCROLL_REGISTER)
             {
-                if(!nes_ppu->addr_scroll_access_latch)
+                if(!nes_ppu->internal_w)
                 {
-                    nes_ppu->scroll_offset_x = nes_ppu->regs->scroll;
-                    printf("SCROLLx %d!\n", nes_ppu->scroll_offset_x);
+                    /* set scroll x */
+                    nes_ppu->internal_t &= ~0x1f;
+                    nes_ppu->internal_t |= ((nes_ppu->regs->scroll >> 3) & 0x1f);
+                    nes_ppu->internal_x = (nes_ppu->regs->scroll & 0x7);
+                    debug_print("SCROLLx %d!\n", ((nes_ppu->internal_t & 0x1f) << 3) | (nes_ppu->internal_x & 0x7) );
                 }
                 else
                 {
-                    nes_ppu->scroll_offset_y = nes_ppu->regs->scroll;
-                    printf("SCROLLy %d!\n", nes_ppu->scroll_offset_y);
+                    nes_ppu->internal_t &= ~(0x1f << 5);
+                    nes_ppu->internal_t &= ~(0x7 << 12);
+                    nes_ppu->internal_t |= ((nes_ppu->regs->scroll >> 3) << 5);
+                    nes_ppu->internal_t |= ((nes_ppu->regs->scroll & 0x7) << 12);
+                    //printf("SCROLLy %d!\n", nes_ppu->scroll_offset_y);
                 }
-                nes_ppu->addr_scroll_access_latch = (nes_ppu->addr_scroll_access_latch + 1) % 2;
+                nes_ppu->internal_w = (nes_ppu->internal_w + 1) % 2;
             }
         }
         /* read */
         else if(nes_ppu->memmap->last_reg_read_write == REG_ACCESS_READ)
         {
-            debug_print("PPU READ ACCESS!: %x data: %x\n", nes_ppu->memmap->last_reg_accessed, *nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->last_reg_accessed]);
+            printf("PPU READ ACCESS!: %x data: %x scanline: %d\n", nes_ppu->memmap->last_reg_accessed, *nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->last_reg_accessed], nes_ppu->current_scan_line);
             if(nes_ppu->memmap->last_reg_accessed == CPU_MEM_PPU_STATUS_REGISTER)
             {
                 nes_ppu->regs->addr = 0;
                 nes_ppu->regs->status &= ~PPU_STATUS_REG_VBLANK;
-                nes_ppu->curr_ppu_data_address = 0;
-                nes_ppu->addr_scroll_access_latch = 0;
+                //nes_ppu->curr_ppu_data_address = 0;
+                nes_ppu->internal_w = 0;
 
                 //nes_ppu->scroll_access_cycle = 0;
                 //nes_ppu->scroll_offset_x = 0;
@@ -181,47 +201,37 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
         while(1);
     }
 
-    static uint16_t last_scroll_x_val = 0;
+    //static uint16_t last_scroll_x_val = 0;
+    uint16_t current_pixel_x = nes_ppu->current_pixel;// + nes_ppu->scroll_offset_x;
+    uint16_t current_pixel_y = nes_ppu->current_scan_line;// + nes_ppu->scroll_offset_y;
+    uint16_t scroll_offset_x = ((nes_ppu->internal_t & 0x1f) << 3) | (nes_ppu->internal_x & 0x7);
+    uint16_t current_pixel_with_scroll_offset_x = (current_pixel_x + scroll_offset_x) % 256;
+    uint16_t nt_offset = (nes_ppu->internal_t & (0x3 << 10)) ? 0x400 : 0;
+    //uint16_t nt_offset = ((nes_ppu->regs->ctrl & PPU_CTRL_BASE_NAME_TABLE_ADDR) && 0x1 ) ? 0x400 : 0;
 
     if((nes_ppu->current_scan_line < 240) && (nes_ppu->current_pixel < 256) && (nes_ppu->regs->mask & PPU_MASK_SHOW_BG))
     {
-        uint16_t current_pixel_x = nes_ppu->current_pixel;// + nes_ppu->scroll_offset_x;
-        uint16_t current_pixel_y = nes_ppu->current_scan_line;// + nes_ppu->scroll_offset_y;
-        uint16_t scroll_offset_x = nes_ppu->scroll_offset_x;
-
-        //printf("MASK %x\n", nes_ppu->regs->mask);
-
-        //if(scroll_offset_x > 100) scroll_offset_x = 100;
-
-        //if(scroll_offset_x < last_scroll_x_val)
-        if((nes_ppu->regs->ctrl & PPU_CTRL_BASE_NAME_TABLE_ADDR) && 0x1 )
+        if((current_pixel_x+scroll_offset_x) > 255)
         {
-            printf("WHAT!? %x %d %d %x %d %d\n", nes_ppu->regs->mask, scroll_offset_x, last_scroll_x_val, (nes_ppu->regs->ctrl & PPU_CTRL_BASE_NAME_TABLE_ADDR), nes_ppu->current_scan_line, nes_ppu->current_pixel);
-            //scroll_offset_x = last_scroll_x_val;
-            //while(1);
+            if(nt_offset == 0x00)
+                nt_offset = 0x400;
+            else 
+                nt_offset = 0x00;
         }
-        // else 
-            last_scroll_x_val = scroll_offset_x;
-
-        uint16_t current_pixel_with_scroll_offset_x = (current_pixel_x + scroll_offset_x) % 256;
-        uint16_t nt_offset = ((nes_ppu->regs->ctrl & PPU_CTRL_BASE_NAME_TABLE_ADDR) && 0x1 ) ? 0x400 : 0;
-        //scroll_offset_x = ((nes_ppu->regs->ctrl & PPU_CTRL_BASE_NAME_TABLE_ADDR) && 0x1 ) ? 256 : 0;
-        if(nt_offset == 0x0 && ((current_pixel_x+scroll_offset_x) > 255))
-        {
-            nt_offset = 0x400;
-        }
-        else if(nt_offset == 0x400 && ((current_pixel_x+scroll_offset_x) > 255))
-        {
-            nt_offset = 0x0;
-        }
+        
+        /* Update v reg */
+        nes_ppu->internal_v &= ~(0x3 << 10);
+        nes_ppu->internal_v |= nt_offset;
+        nes_ppu->internal_v &= ~0x001F;
+        nes_ppu->internal_v &= ~0x03E0;
+        nes_ppu->internal_v |= (((current_pixel_y/8) << 5) & 0x3E0) + ((current_pixel_with_scroll_offset_x/8) & 0x1F);
 
         /* calculate tile row */
-        name_table_load_addr = ( PPU_MEM_NAME_TABLE0_OFFSET + nt_offset + (0x20 * ((current_pixel_y)/8) + (current_pixel_with_scroll_offset_x/8) ));
-        // if((name_table_load_addr >= PPU_MEM_ATTRIBUTE_TABLE0_OFFSET) && (name_table_load_addr < PPU_MEM_NAME_TABLE1_OFFSET))
-        // {
-        //     name_table_load_addr += 0x40;
-        //     //printf("nt:%x\n", name_table_load_addr);
-        // }
+        name_table_load_addr = 0x2000 | (nes_ppu->internal_v & 0x0FFF);
+        //name_table_load_addr = ( PPU_MEM_NAME_TABLE0_OFFSET + nt_offset + (0x20 * ((current_pixel_y)/8) + (current_pixel_with_scroll_offset_x/8) ));
+
+        // if(current_pixel_x == 0)
+        //     printf("v-reg:%x %x\n", 0x2000 | (nes_ppu->internal_v & 0x0FFF), name_table_load_addr);
 
         current_tile_pixel_row = current_pixel_y%8;
 
@@ -242,7 +252,8 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
         /* Get attribute bits */
         attribute_bit_quadrant = (((current_pixel_y%32)/16) << 1 ) | (((current_pixel_with_scroll_offset_x)%32)/16);
         attribute_bit_quadrant *= 2;
-        attribute_table_load_addr = (PPU_MEM_ATTRIBUTE_TABLE0_OFFSET + nt_offset + (0x8 * (current_pixel_y/32)) + ((current_pixel_with_scroll_offset_x)/32));
+        attribute_table_load_addr = 0x23C0 | (nes_ppu->internal_v & 0x0C00) | ((nes_ppu->internal_v >> 4) & 0x38) | ((nes_ppu->internal_v >> 2) & 0x07);
+        //attribute_table_load_addr = (PPU_MEM_ATTRIBUTE_TABLE0_OFFSET + nt_offset + (0x8 * (current_pixel_y/32)) + ((current_pixel_with_scroll_offset_x)/32));
         attribute_bits = (*nes_ppu->memmap->ppu_mem_map.mem_virt[attribute_table_load_addr] >> attribute_bit_quadrant) & 0x3;
 
         color_pallete_address = PPU_MEM_PALETTE_RAM_OFFSET + (attribute_bits << 2) + ((tile_high_bit<<1) | tile_low_bit);
@@ -304,6 +315,16 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
         //         current_pixel_x,
         //         current_pixel_y);
     }
+
+    // //if(scroll_offset_x < last_scroll_x_val)
+    // if(((nes_ppu->regs->ctrl & PPU_CTRL_BASE_NAME_TABLE_ADDR) && 0x1 ) && nes_ppu->current_pixel == 0)
+    // {
+    //     printf("WHAT!? %x %d %d %x %d %d %x %x %x\n", nes_ppu->regs->mask, scroll_offset_x, last_scroll_x_val, nt_offset, nes_ppu->current_scan_line, nes_ppu->current_pixel, nes_ppu->regs->mask, nes_ppu->regs->status, nes_ppu->regs->ctrl);
+    //     //scroll_offset_x = last_scroll_x_val;
+    //     //while(1);
+    // }
+    // // else 
+    //     last_scroll_x_val = scroll_offset_x;
 
     return ppu_ret_status;
 }
