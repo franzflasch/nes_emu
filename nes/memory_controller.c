@@ -34,76 +34,77 @@ static uint8_t check_is_controller_reg(uint16_t addr)
     return 0;
 }
 
-uint8_t memory_read_byte(nes_cpu_mem_td *memmap, uint16_t addr) 
+uint16_t memory_read_byte(nes_cpu_mem_td *memmap, uint16_t addr, uint16_t data) 
+{
+    return (memmap->memory[addr]); 
+}
+
+uint16_t memory_read_word(nes_cpu_mem_td *memmap, uint16_t addr, uint16_t data) 
+{
+    return memory_read_byte(memmap, addr, 0) + (memory_read_byte(memmap, addr + 1, 0) << 8);
+}
+
+uint16_t memory_write_byte(nes_cpu_mem_td *memmap, uint16_t addr, uint16_t data) 
+{
+    memmap->memory[addr] = data;
+    return 0;
+}
+
+uint16_t memory_write_word(nes_cpu_mem_td *memmap, uint16_t addr, uint16_t data) 
+{
+    memory_write_byte(memmap, addr, data & 0xFF);
+    memory_write_byte(memmap, addr + 1, data >> 8);
+    return 0;
+}
+
+#define ACCESS_WRITE_WORD 0
+#define ACCESS_WRITE_BYTE 1
+#define ACCESS_READ_WORD  2
+#define ACCESS_READ_BYTE  3
+#define ACCESS_FUNC_MAX   4
+
+uint16_t (*ppu_access_funcs[ACCESS_FUNC_MAX])(nes_cpu_mem_td *memmap, uint16_t addr, uint16_t data) = 
+{
+    NULL,
+    NULL,
+    NULL,
+    NULL
+};
+
+uint16_t (*controller_access_funcs[ACCESS_FUNC_MAX])(nes_cpu_mem_td *memmap, uint16_t addr, uint16_t data) = 
+{
+    NULL,
+    NULL,
+    NULL,
+    NULL
+};
+
+uint16_t (*default_access_funcs[ACCESS_FUNC_MAX])(nes_cpu_mem_td *memmap, uint16_t addr, uint16_t data) = 
+{
+    memory_write_word,
+    memory_write_byte,
+    memory_read_word,
+    memory_read_byte
+};
+
+uint16_t memory_access(nes_cpu_mem_td *memmap, uint16_t addr, uint16_t data, uint8_t access_type)
 {
     uint16_t actual_addr = cpu_memory_address_demirror(addr);
 
     if(check_is_ppu_reg(actual_addr))
     {
-        // FIXME ppu reg access;
-        return 0;
+        return ppu_access_funcs[access_type](memmap, actual_addr, data);
     }
-    else if (check_is_controller_reg(actual_addr))
+    else if(check_is_controller_reg(actual_addr))
     {
-        // FIXME controller reg access;
-        return 0;
-    }
-    else
-        return (memmap->memory[actual_addr]); 
-}
-
-uint16_t memory_read_word(nes_cpu_mem_td *memmap, uint16_t addr) 
-{
-    uint16_t actual_addr = cpu_memory_address_demirror(addr);
-
-    if(check_is_ppu_reg(actual_addr))
-    {
-        // FIXME ppu reg access;
-        return 0;
-    }
-    else if (check_is_controller_reg(actual_addr))
-    {
-        // FIXME controller reg access;
-        return 0;
-    }
-    else
-        return memory_read_byte(memmap, actual_addr) + (memory_read_byte(memmap, actual_addr + 1) << 8);
-}
-
-void memory_write_byte(nes_cpu_mem_td *memmap, uint16_t addr, uint8_t data) 
-{
-    uint16_t actual_addr = cpu_memory_address_demirror(addr);
-
-    if(check_is_ppu_reg(actual_addr))
-    {
-        // FIXME ppu reg access;
-    }
-    else if (check_is_controller_reg(actual_addr))
-    {
-        // FIXME controller reg access;
-    }
-    else
-        memmap->memory[actual_addr] = data;
-}
-
-void memory_write_word(nes_cpu_mem_td *memmap, uint16_t addr, uint16_t data) 
-{
-    uint16_t actual_addr = cpu_memory_address_demirror(addr);
-
-    if(check_is_ppu_reg(actual_addr))
-    {
-        // FIXME ppu reg access;
-    }
-    else if (check_is_controller_reg(actual_addr))
-    {
-        // FIXME controller reg access;
+        return controller_access_funcs[access_type](memmap, actual_addr, data);
     }
     else
     {
-        memory_write_byte(memmap, actual_addr, data & 0xFF);
-        memory_write_byte(memmap, actual_addr + 1, data >> 8);
+        return default_access_funcs[access_type](memmap, actual_addr, data);
     }
 }
+
 
 void cpu_memory_init(nes_cpu_mem_td *memmap)
 {
