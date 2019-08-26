@@ -524,8 +524,10 @@ int main(int argc, char *argv[])
 
         for(;;)
         {
-            if(ppu_status & PPU_STATUS_NMI) nes_cpu_nmi(&nes_cpu);
-            cpu_clocks = nes_cpu_run(&nes_cpu);
+            cpu_clocks = 0;
+            if(ppu_status & PPU_STATUS_NMI)
+                cpu_clocks += nes_cpu_nmi(&nes_cpu);
+            cpu_clocks += nes_cpu_run(&nes_cpu);
 
             controller_run(&nes_mem);
 
