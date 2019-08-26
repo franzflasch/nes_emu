@@ -85,7 +85,7 @@ void nes_ppu_write_oam_data(nes_memmap_t *memmap, uint8_t val);
 uint8_t nes_ppu_read_oam_data(nes_memmap_t *memmap);
 
 void nes_ppu_init(nes_ppu_t *nes_ppu, nes_memmap_t *memmap);
-uint8_t nes_ppu_run(nes_ppu_t *nes_ppu);
+uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles);
 void nes_ppu_dump_regs(nes_ppu_t *nes_ppu);
 
 #endif

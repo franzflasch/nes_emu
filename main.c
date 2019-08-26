@@ -491,8 +491,8 @@ int main(int argc, char *argv[])
     SDL_Window *window = SDL_CreateWindow("nes_emu",
                                           SDL_WINDOWPOS_UNDEFINED,
                                           SDL_WINDOWPOS_UNDEFINED,
-                                          256*4,
-                                          240*4,
+                                          256*1,
+                                          240*1,
                                           SDL_WINDOW_OPENGL);
     if (window == NULL)
     {
@@ -533,15 +533,11 @@ int main(int argc, char *argv[])
 
             ppu_status = 0;
 
-            /* ppu is initialized after ~30000 ticks */
-            if((nes_cpu.num_cycles*3) > 30000)
+            /* the ppu runs at a 3 times higher clock rate than the cpu
+            so we need to give the ppu some clocks here to catchup */
+            for(ppu_clock_index=0;ppu_clock_index<(3*cpu_clocks);ppu_clock_index++)
             {
-                /* the ppu runs at a  3 times higher clock rate than the cpu
-                so we need to give the ppu some clocks here to catchup */
-                for(ppu_clock_index=0;ppu_clock_index<(3*cpu_clocks);ppu_clock_index++)
-                {
-                    ppu_status |= nes_ppu_run(&nes_ppu);
-                }
+                ppu_status |= nes_ppu_run(&nes_ppu, nes_cpu.num_cycles);
             }
 
             // if(ppu_status & PPU_STATUS_OAM_ACCESS)
@@ -555,11 +551,11 @@ int main(int argc, char *argv[])
             if(ppu_status & PPU_STATUS_FRAME_READY) break;
         }
 
-        // /* Nametable 0 contents */
-        // for(int i=0x2000;i<0x23FF;i++)
-        // {
-        //     debug_print("Nametable 0: %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
-        // }
+        /* Nametable 1 contents */
+        for(int i=0x2400;i<0x27FF;i++)
+        {
+            debug_print("Nametable 1: %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
+        }
 
         SDL_UpdateTexture(texture, NULL, nes_ppu.screen_bitmap, 256 * sizeof(Uint32));
 

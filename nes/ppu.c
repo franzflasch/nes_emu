@@ -33,7 +33,7 @@ void nes_ppu_init(nes_ppu_t *nes_ppu, nes_memmap_t *memmap)
     nes_ppu->regs = (ppu_regs_t *) memmap->cpu_mem_map.mem_virt[CPU_MEM_PPU_REGISTER_OFFSET];
 }
 
-uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
+uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
 {   
     uint8_t ppu_ret_status = 0;
     uint16_t pattern_table_load_addr = 0;
@@ -78,6 +78,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
     {
         nes_ppu->regs->status &= ~PPU_STATUS_REG_VBLANK;
         nes_ppu->regs->status &= ~PPU_STATUS_SPRITE0_HIT;
+        debug_print("vblank cycles: %d\n", cpu_cycles);
     }
     else if((nes_ppu->current_scan_line == 240) && (nes_ppu->current_pixel >= 257) && (nes_ppu->current_pixel <= 320))
     {
@@ -95,6 +96,16 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
         ) 
       )
     {
+        if(nes_ppu->memmap->last_reg_read_write == REG_ACCESS_WRITE)
+        {
+            printf("PPU WRITE ACCESS!: %x data: %x\n", nes_ppu->memmap->last_reg_accessed, *nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->last_reg_accessed]);
+        }
+        else
+        {
+            printf("PPU READ ACCESS!: %x data: %x scanline: %d\n", nes_ppu->memmap->last_reg_accessed, *nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->last_reg_accessed], nes_ppu->current_scan_line);
+        }
+        
+
         if(nes_ppu->memmap->last_reg_accessed == CPU_MEM_PPU_OAMDMA_REGISTER)
         {
             printf("OAMDMA access currently not implemented!\n");
@@ -110,7 +121,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
         /* write */
         if(nes_ppu->memmap->last_reg_read_write == REG_ACCESS_WRITE)
         {
-            printf("PPU WRITE ACCESS!: %x data: %x\n", nes_ppu->memmap->last_reg_accessed, *nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->last_reg_accessed]);
+            //printf("PPU WRITE ACCESS!: %x data: %x\n", nes_ppu->memmap->last_reg_accessed, *nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->last_reg_accessed]);
 
             /* Update least significant bits previously written into a PPU register */
             nes_ppu->regs->status &= (~0x1F);
@@ -176,7 +187,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu)
         /* read */
         else if(nes_ppu->memmap->last_reg_read_write == REG_ACCESS_READ)
         {
-            printf("PPU READ ACCESS!: %x data: %x scanline: %d\n", nes_ppu->memmap->last_reg_accessed, *nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->last_reg_accessed], nes_ppu->current_scan_line);
+            //printf("PPU READ ACCESS!: %x data: %x scanline: %d\n", nes_ppu->memmap->last_reg_accessed, *nes_ppu->memmap->cpu_mem_map.mem_virt[nes_ppu->memmap->last_reg_accessed], nes_ppu->current_scan_line);
             if(nes_ppu->memmap->last_reg_accessed == CPU_MEM_PPU_STATUS_REGISTER)
             {
                 nes_ppu->regs->addr = 0;
