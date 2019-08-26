@@ -877,9 +877,10 @@ uint32_t nes_cpu_run(nes_cpu_t *nes_cpu)
 void nes_cpu_nmi(nes_cpu_t *nes_cpu) 
 {
     debug_print("NMI! cycles: %ld\n", nes_cpu->num_cycles);
-    //nes_cpu->regs.P |= FLAG_INTERRUPT;
+    nes_cpu->regs.P |= FLAG_INTERRUPT;
     cpu_stack_push_word(nes_cpu, nes_cpu->regs.PC);
     cpu_stack_push_byte(nes_cpu, nes_cpu->regs.P);
+    nes_cpu->regs.P &= ~FLAG_UNUSED;
     nes_cpu->regs.PC = memory_read_word(nes_cpu, 0xfffa);
 }
 
