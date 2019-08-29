@@ -126,7 +126,14 @@ uint16_t cpu_memory_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uin
 
     if(check_is_ppu_reg(actual_addr))
     {
-        printf("PPU: %x %x\n", addr, data);
+        if(access_type == ACCESS_READ_BYTE)
+        {
+            printf("PPU READ %x %x\n", addr, ppu_reg_access(memmap, addr, 0, access_type));
+        }
+        else
+        {
+            printf("PPU WRITE %x %x\n", addr, data);
+        }
         return ppu_reg_access(memmap, addr, data, access_type);
     }
     else if(check_is_controller_reg(actual_addr))

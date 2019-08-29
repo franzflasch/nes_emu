@@ -21,41 +21,38 @@ uint8_t psg_io_read(void);
 
 static uint8_t memory_read_byte(nes_cpu_t *nes_cpu, uint16_t addr) 
 {
-    /* Controller input must be immediately */
-    if(addr == CONTROLLER_PORT1_REG) return psg_io_read();
-
-    nes_cpu->memmap->last_reg_accessed = addr;
-    nes_cpu->memmap->last_reg_read_write = REG_ACCESS_READ;
+    // nes_cpu->memmap->last_reg_accessed = addr;
+    // nes_cpu->memmap->last_reg_read_write = REG_ACCESS_READ;
 
     /* new interface */
-    cpu_memory_access(nes_cpu->nes_mem, addr, 0, ACCESS_READ_BYTE);
+    return (uint8_t)cpu_memory_access(nes_cpu->nes_mem, addr, 0, ACCESS_READ_BYTE);
 
-    return (*nes_cpu->memmap->cpu_mem_map.mem_virt[addr]); 
+    //return (*nes_cpu->memmap->cpu_mem_map.mem_virt[addr]); 
 }
 
 static uint16_t memory_read_word(nes_cpu_t *nes_cpu, uint16_t addr) {
-    nes_cpu->memmap->last_reg_accessed = addr;
-    nes_cpu->memmap->last_reg_read_write = REG_ACCESS_READ;
+    // nes_cpu->memmap->last_reg_accessed = addr;
+    // nes_cpu->memmap->last_reg_read_write = REG_ACCESS_READ;
 
-    cpu_memory_access(nes_cpu->nes_mem, addr, 0, ACCESS_READ_WORD);
+    return cpu_memory_access(nes_cpu->nes_mem, addr, 0, ACCESS_READ_WORD);
 
-    return memory_read_byte(nes_cpu, addr) + (memory_read_byte(nes_cpu, addr + 1) << 8);
+    //return memory_read_byte(nes_cpu, addr) + (memory_read_byte(nes_cpu, addr + 1) << 8);
 }
 
 static void memory_write_byte(nes_cpu_t *nes_cpu, uint16_t addr, uint8_t data) 
 {
-    nes_cpu->memmap->last_reg_accessed = addr;
-    nes_cpu->memmap->last_reg_read_write = REG_ACCESS_WRITE;
-    *nes_cpu->memmap->cpu_mem_map.mem_virt[addr] = data;
+    // nes_cpu->memmap->last_reg_accessed = addr;
+    // nes_cpu->memmap->last_reg_read_write = REG_ACCESS_WRITE;
+    // *nes_cpu->memmap->cpu_mem_map.mem_virt[addr] = data;
 
     cpu_memory_access(nes_cpu->nes_mem, addr, data, ACCESS_WRITE_BYTE);
 }
 
 static void memory_write_word(nes_cpu_t *nes_cpu, uint16_t addr, uint16_t data) {
-    nes_cpu->memmap->last_reg_accessed = addr;
-    nes_cpu->memmap->last_reg_read_write = REG_ACCESS_WRITE;
-    memory_write_byte(nes_cpu, addr, data & 0xFF);
-    memory_write_byte(nes_cpu, addr + 1, data >> 8);
+    // nes_cpu->memmap->last_reg_accessed = addr;
+    // nes_cpu->memmap->last_reg_read_write = REG_ACCESS_WRITE;
+    // memory_write_byte(nes_cpu, addr, data & 0xFF);
+    // memory_write_byte(nes_cpu, addr + 1, data >> 8);
 
     cpu_memory_access(nes_cpu->nes_mem, addr, data, ACCESS_WRITE_WORD);
 }
@@ -901,14 +898,13 @@ uint32_t nes_cpu_nmi(nes_cpu_t *nes_cpu)
     return 4;
 }
 
-void nes_cpu_init(nes_cpu_t *nes_cpu, nes_memmap_t *memmap, nes_mem_td *nes_mem)
+void nes_cpu_init(nes_cpu_t *nes_cpu, nes_mem_td *nes_mem)
 {
     memset(nes_cpu, 0, sizeof(*nes_cpu));
 
     nes_cpu->num_cycles = 0;
 
     /* At first set the memory interface */
-    nes_cpu->memmap = memmap;
     nes_cpu->nes_mem = nes_mem;
 
     //nes_cpu->regs.PC = 0xC000;

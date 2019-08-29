@@ -440,7 +440,7 @@ uint8_t nes_key_state(uint8_t b)
 int main(int argc, char *argv[])
 {
     //int i = 0;
-    static nes_memmap_t nes_mem;
+    //static nes_memmap_t nes_mem;
     static nes_ppu_t nes_ppu;
     static nes_cpu_t nes_cpu;
     static nes_cartridge_t nes_cart;
@@ -458,16 +458,13 @@ int main(int argc, char *argv[])
     }
 
     /* init memory map */
-    nes_memmap_init(&nes_mem);
-
-    /* init ppu */
-    nes_ppu_init(&nes_ppu, &nes_mem);
+    //nes_memmap_init(&nes_mem);
 
     /* init cartridge */
     nes_cart_init(&nes_cart, &nes_memory);
 
     /* load rom */
-    if(nes_cart_load_rom(&nes_cart, &nes_mem, argv[1]) != 0)
+    if(nes_cart_load_rom(&nes_cart, argv[1]) != 0)
     {
         printf("ROM does not exist\n");
         exit(-2);
@@ -475,10 +472,13 @@ int main(int argc, char *argv[])
     nes_cart_print_rom_metadata(&nes_cart);
 
     /* Set nametable mirroring after loading the cartridge */
-    nes_ppu_memmap_set_nt_mirror(&nes_mem.ppu_mem_map);
+    //nes_ppu_memmap_set_nt_mirror(&nes_mem.ppu_mem_map);
 
     /* init cpu */
-    nes_cpu_init(&nes_cpu, &nes_mem, &nes_memory);
+    nes_cpu_init(&nes_cpu, &nes_memory);
+
+    /* init ppu */
+    nes_ppu_init(&nes_ppu, &nes_memory);
 
 
 
@@ -534,7 +534,7 @@ int main(int argc, char *argv[])
                 cpu_clocks += nes_cpu_nmi(&nes_cpu);
             cpu_clocks += nes_cpu_run(&nes_cpu);
 
-            controller_run(&nes_mem);
+            //controller_run(&nes_mem);
 
             // ppu_start:
 
@@ -558,11 +558,11 @@ int main(int argc, char *argv[])
             if(ppu_status & PPU_STATUS_FRAME_READY) break;
         }
 
-        /* Nametable 1 contents */
-        for(int i=0x2400;i<0x27FF;i++)
-        {
-            printf("Nametable 1: %x %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i],  (uint8_t)ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
-        }
+        // /* Nametable 1 contents */
+        // for(int i=0x2400;i<0x27FF;i++)
+        // {
+        //     printf("Nametable 1: %x %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i],  (uint8_t)ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
+        // }
 
         SDL_UpdateTexture(texture, NULL, nes_ppu.screen_bitmap, 256 * sizeof(Uint32));
 
