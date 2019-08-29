@@ -28,7 +28,7 @@ static uint8_t memory_read_byte(nes_cpu_t *nes_cpu, uint16_t addr)
     nes_cpu->memmap->last_reg_read_write = REG_ACCESS_READ;
 
     /* new interface */
-    memory_access(nes_cpu->nes_mem, addr, 0, ACCESS_READ_BYTE);
+    cpu_memory_access(nes_cpu->nes_mem, addr, 0, ACCESS_READ_BYTE);
 
     return (*nes_cpu->memmap->cpu_mem_map.mem_virt[addr]); 
 }
@@ -37,7 +37,7 @@ static uint16_t memory_read_word(nes_cpu_t *nes_cpu, uint16_t addr) {
     nes_cpu->memmap->last_reg_accessed = addr;
     nes_cpu->memmap->last_reg_read_write = REG_ACCESS_READ;
 
-    memory_access(nes_cpu->nes_mem, addr, 0, ACCESS_READ_WORD);
+    cpu_memory_access(nes_cpu->nes_mem, addr, 0, ACCESS_READ_WORD);
 
     return memory_read_byte(nes_cpu, addr) + (memory_read_byte(nes_cpu, addr + 1) << 8);
 }
@@ -48,7 +48,7 @@ static void memory_write_byte(nes_cpu_t *nes_cpu, uint16_t addr, uint8_t data)
     nes_cpu->memmap->last_reg_read_write = REG_ACCESS_WRITE;
     *nes_cpu->memmap->cpu_mem_map.mem_virt[addr] = data;
 
-    memory_access(nes_cpu->nes_mem, addr, data, ACCESS_WRITE_BYTE);
+    cpu_memory_access(nes_cpu->nes_mem, addr, data, ACCESS_WRITE_BYTE);
 }
 
 static void memory_write_word(nes_cpu_t *nes_cpu, uint16_t addr, uint16_t data) {
@@ -57,7 +57,7 @@ static void memory_write_word(nes_cpu_t *nes_cpu, uint16_t addr, uint16_t data) 
     memory_write_byte(nes_cpu, addr, data & 0xFF);
     memory_write_byte(nes_cpu, addr + 1, data >> 8);
 
-    memory_access(nes_cpu->nes_mem, addr, data, ACCESS_WRITE_WORD);
+    cpu_memory_access(nes_cpu->nes_mem, addr, data, ACCESS_WRITE_WORD);
 }
 
 static void check_page_cross_x(nes_cpu_t *nes_cpu)

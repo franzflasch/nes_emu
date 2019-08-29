@@ -1,7 +1,7 @@
-#include <nes.h>
-#include <ppu.h>
 #include <stdio.h>
 #include <string.h>
+#include <nes.h>
+#include <ppu.h>
 
 #define debug_print(fmt, ...) \
             do { if (DEBUG_PPU) printf(fmt, __VA_ARGS__); } while (0)
@@ -32,6 +32,97 @@ void nes_ppu_init(nes_ppu_t *nes_ppu, nes_memmap_t *memmap)
     /* map ppu registers into the shared CPU memory */
     nes_ppu->regs = (ppu_regs_t *) memmap->cpu_mem_map.mem_virt[CPU_MEM_PPU_REGISTER_OFFSET];
 }
+
+uint16_t ppu_reg_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_t access_type)
+{
+    if((access_type == ACCESS_READ_WORD) || (access_type == ACCESS_WRITE_WORD))
+    {
+        printf("Invalid PPU reg access!\n");
+        while(1);
+    }
+
+    if(access_type == ACCESS_WRITE_BYTE)
+    {
+        /* Update least significant bits previously written into a PPU register */
+        memmap->ppu_regs.status &= (~0x1F);
+        memmap->ppu_regs.status |= (data & 0x1F);
+
+        if(addr == CPU_MEM_PPU_CTRL_REGISTER)
+        {
+            memmap->ppu_regs.ctrl = data;
+            /* Reset vram nametable address */
+            memmap->internal_t &= ~(0x3 << 10);
+            memmap->internal_t |= (memmap->ppu_regs.ctrl & PPU_CTRL_BASE_NAME_TABLE_ADDR) << 10;
+        }
+        else if(addr == CPU_MEM_PPU_ADDR_REGISTER)
+        {
+            memmap->ppu_regs.addr = data;
+
+            if(!memmap->internal_w)
+            {
+                memmap->internal_t &= ~(0xff << 8);
+                memmap->internal_t |= (memmap->ppu_regs.addr << 8);
+                /* Clear bit 14 and 15 */
+                memmap->internal_t &= ~(0x3 << 14);
+            }
+            else
+            {
+                memmap->internal_t &= ~(0xff);
+                memmap->internal_t |= (memmap->ppu_regs.addr);
+                memmap->internal_v = memmap->internal_t;
+            }
+            memmap->internal_w = (memmap->internal_w + 1) % 2;
+        }
+        else if(addr == CPU_MEM_PPU_DATA_REGISTER)
+        {
+            memmap->ppu_regs.data = data;
+            if(memmap->internal_v >= PPU_MEM_SIZE)
+            {
+                printf("ILLEGAL ADDRESS: %x\n", memmap->internal_v);
+                while(1);
+            }
+
+            //printf("COPY PPU %x %x \n", addr, memmap->ppu_regs.data);
+            ppu_memory_access(memmap, memmap->internal_v, memmap->ppu_regs.data, ACCESS_WRITE_BYTE);
+
+            /* check address increment bit */
+            memmap->internal_v += (memmap->ppu_regs.ctrl & 0x04) ? 32 : 1;
+        }
+        else if(addr == CPU_MEM_PPU_SCROLL_REGISTER)
+        {
+            memmap->ppu_regs.scroll = data;
+            if(!memmap->internal_w)
+            {
+                /* set scroll x */
+                memmap->internal_t &= ~0x1f;
+                memmap->internal_t |= ((memmap->ppu_regs.scroll >> 3) & 0x1f);
+                memmap->internal_x = (memmap->ppu_regs.scroll & 0x7);
+                debug_print("SCROLLx %d!\n", ((memmap->internal_t & 0x1f) << 3) | (memmap->internal_x & 0x7) );
+            }
+            else
+            {
+                memmap->internal_t &= ~(0x1f << 5);
+                memmap->internal_t &= ~(0x7 << 12);
+                memmap->internal_t |= ((memmap->ppu_regs.scroll >> 3) << 5);
+                memmap->internal_t |= ((memmap->ppu_regs.scroll & 0x7) << 12);
+            }
+            memmap->internal_w = (memmap->internal_w + 1) % 2;
+        }
+    }
+    /* read */
+    else if(access_type == ACCESS_READ_BYTE)
+    {
+        if(addr == CPU_MEM_PPU_STATUS_REGISTER)
+        {
+            memmap->ppu_regs.addr = 0;
+            memmap->ppu_regs.status &= ~PPU_STATUS_REG_VBLANK;
+            memmap->internal_w = 0;
+        }
+    }
+
+    return 0;
+}
+
 
 uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
 {   
