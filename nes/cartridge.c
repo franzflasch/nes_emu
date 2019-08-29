@@ -1,9 +1,7 @@
 #include <cartridge.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#define CPU_PRG_LOCATION0 0x8000
-#define CPU_PRG_LOCATION1 0xC000
+#include <string.h>
 
 static void memory_write_byte_cpu(nes_cartridge_t *nes_cart, uint16_t addr, uint8_t data) 
 {
@@ -46,8 +44,11 @@ int nes_cart_load_rom(nes_cartridge_t *nes_cart, nes_memmap_t *memmap, char *rom
         if(fread(&tmp, sizeof(uint8_t), 1, fp) != 1) 
             printf("Err fread\n");
 
-        memory_write_byte_cpu(nes_cart, CPU_PRG_LOCATION0+i, tmp);
-        memory_write_byte_cpu(nes_cart, CPU_PRG_LOCATION1+i, tmp);
+        memory_write_byte_cpu(nes_cart, CPU_MEM_PRG_LOCATION0+i, tmp);
+        //memory_write_byte_cpu(nes_cart, CPU_MEM_PRG_LOCATION1+i, tmp);
+
+        cpu_memory_access(nes_cart->nes_mem, CPU_MEM_PRG_LOCATION0+i, tmp, ACCESS_WRITE_BYTE);
+        //cpu_memory_access(nes_cart->nes_mem, CPU_MEM_PRG_LOCATION1+i, tmp, ACCESS_WRITE_BYTE);
     }
 
     for(i=0;i<nes_cart->chr_rom_size;i++)
@@ -59,7 +60,10 @@ int nes_cart_load_rom(nes_cartridge_t *nes_cart, nes_memmap_t *memmap, char *rom
         }
 
         memory_write_byte_ppu(nes_cart, PPU_MEM_PATTERN_TABLE0_OFFSET+i, tmp);
-        memory_write_byte_ppu(nes_cart, PPU_MEM_PATTERN_TABLE1_OFFSET+i, tmp);
+        //memory_write_byte_ppu(nes_cart, PPU_MEM_PATTERN_TABLE1_OFFSET+i, tmp);
+
+        ppu_memory_access(nes_cart->nes_mem, PPU_MEM_PATTERN_TABLE0_OFFSET+i, tmp, ACCESS_WRITE_BYTE);
+        //ppu_memory_access(nes_cart->nes_mem, PPU_MEM_PATTERN_TABLE1_OFFSET+i, tmp, ACCESS_WRITE_BYTE);
     }
 
     memmap->ppu_mem_map.mirroring = nes_cart->header[6] & 0x1;
@@ -76,6 +80,13 @@ int nes_cart_load_rom(nes_cartridge_t *nes_cart, nes_memmap_t *memmap, char *rom
 
     return 0;
 }
+
+void nes_cart_init(nes_cartridge_t *nes_cart, nes_mem_td *nes_mem)
+{
+    memset(nes_cart, 0, sizeof(*nes_cart));
+    nes_cart->nes_mem = nes_mem;
+}
+
 
 void nes_cart_print_rom_metadata(nes_cartridge_t *nes_cart) 
 {

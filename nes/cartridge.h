@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <memory.h>
+#include <memory_controller.h>
 
 #define ERR_FILE_NOT_EXIST              (1)
 #define ERR_NES_FILE_HEADER_READ_FAILED (2)
@@ -22,9 +23,13 @@ typedef struct nes_cartridge_s
     /* Mem interface */
     nes_memmap_t *memmap;
 
+	/* New interface */
+	nes_mem_td *nes_mem;
+
 } nes_cartridge_t;
 
 int nes_cart_load_rom(nes_cartridge_t *nes_cart, nes_memmap_t *memmap, char *rom);
+void nes_cart_init(nes_cartridge_t *nes_cart, nes_mem_td *nes_mem);
 void nes_cart_print_rom_metadata(nes_cartridge_t *nes_cart);
 
 #endif

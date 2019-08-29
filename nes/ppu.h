@@ -3,57 +3,11 @@
 
 #include <stdint.h>
 #include <memory.h>
+#include <memory_controller.h>
 
 #define PPU_STATUS_FRAME_READY (1 << 0)
 #define PPU_STATUS_NMI (1 << 1)
 #define PPU_STATUS_OAM_ACCESS (1 << 2)
-
-typedef struct __attribute__((packed)) ppu_regs_s
-{
-    // $2000
-    // uint8_t name_table_address : 2;
-    // uint8_t vertical_write : 1;
-    // uint8_t sprite_pattern_table_addr : 1;
-    // uint8_t screen_pattern_table_addr : 1;
-    // uint8_t sprite_size : 1;
-    // uint8_t unused : 1;
-    // uint8_t vblank_enabled : 1;
-	uint8_t ctrl;
-
-    // $2001
-    // uint8 unused : 1;
-    // uint8 screen_mask : 1;
-    // uint8 sprite_mask : 1;
-    // uint8 screen_enabled : 1;
-    // uint8 sprites_enabled : 1;
-    // uint8 screen_red_tint : 1;
-    // uint8 screen_green_tint : 1;
-    // uint8 screen_blue_tint : 1;
-    uint8_t mask;
-
-    // $2002
-    // uint8 unused : 5;
-    // uint8 sprite_overflow_bit : 1;
-    // uint8 sprite_zero_hit : 1;
-    // uint8 vblank_flag : 1;    
-    uint8_t status;
-
-    // $2003
-    uint8_t oamaddr;
-
-    // $2004
-    uint8_t oamdata;
-
-    // $2005
-    uint8_t scroll;
-
-    // $2006
-    uint8_t addr;
-
-    // $2007
-    uint8_t data;
-
-} ppu_regs_t;
 
 typedef struct nes_ppu_s
 {
@@ -85,6 +39,7 @@ void nes_ppu_write_oam_data(nes_memmap_t *memmap, uint8_t val);
 uint8_t nes_ppu_read_oam_data(nes_memmap_t *memmap);
 
 void nes_ppu_init(nes_ppu_t *nes_ppu, nes_memmap_t *memmap);
+uint16_t ppu_reg_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_t access_type);
 uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles);
 void nes_ppu_dump_regs(nes_ppu_t *nes_ppu);
 

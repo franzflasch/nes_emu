@@ -463,6 +463,8 @@ int main(int argc, char *argv[])
     /* init ppu */
     nes_ppu_init(&nes_ppu, &nes_mem);
 
+    /* init cartridge */
+    nes_cart_init(&nes_cart, &nes_memory);
 
     /* load rom */
     if(nes_cart_load_rom(&nes_cart, &nes_mem, argv[1]) != 0)
@@ -559,7 +561,7 @@ int main(int argc, char *argv[])
         /* Nametable 1 contents */
         for(int i=0x2400;i<0x27FF;i++)
         {
-            debug_print("Nametable 1: %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i]);
+            printf("Nametable 1: %x %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i],  (uint8_t)ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
         }
 
         SDL_UpdateTexture(texture, NULL, nes_ppu.screen_bitmap, 256 * sizeof(Uint32));
