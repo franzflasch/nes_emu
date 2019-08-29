@@ -2,7 +2,6 @@
 #define PPU_H
 
 #include <stdint.h>
-#include <memory.h>
 #include <memory_controller.h>
 
 #define PPU_STATUS_FRAME_READY (1 << 0)
@@ -11,16 +10,10 @@
 
 typedef struct nes_ppu_s
 {
-	nes_memmap_t *memmap;
-	ppu_regs_t *regs;
-
 	uint16_t current_scan_line;
     uint16_t current_pixel;
 
-    uint8_t internal_w;
-    uint16_t internal_t;
-    uint16_t internal_v;
-    uint8_t internal_x;
+    nes_mem_td *nes_memory;
 
     uint32_t screen_bitmap[256*240];
 
@@ -35,11 +28,11 @@ typedef struct ppu_color_pallete_s
 
 } ppu_color_pallete_t;
 
-void nes_ppu_write_oam_data(nes_memmap_t *memmap, uint8_t val);
-uint8_t nes_ppu_read_oam_data(nes_memmap_t *memmap);
+// void nes_ppu_write_oam_data(nes_memmap_t *memmap, uint8_t val);
+// uint8_t nes_ppu_read_oam_data(nes_memmap_t *memmap);
 
-void nes_ppu_init(nes_ppu_t *nes_ppu, nes_memmap_t *memmap);
 uint16_t ppu_reg_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_t access_type);
+void nes_ppu_init(nes_ppu_t *nes_ppu, nes_mem_td *nes_memory);
 uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles);
 void nes_ppu_dump_regs(nes_ppu_t *nes_ppu);
 
