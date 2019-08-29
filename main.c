@@ -444,6 +444,9 @@ int main(int argc, char *argv[])
     static nes_ppu_t nes_ppu;
     static nes_cpu_t nes_cpu;
     static nes_cartridge_t nes_cart;
+
+    static nes_mem_td nes_memory = { 0 };
+
     uint32_t cpu_clocks = 0;
     uint32_t ppu_clock_index = 0;
     uint8_t ppu_status = 0;
@@ -473,7 +476,7 @@ int main(int argc, char *argv[])
     nes_ppu_memmap_set_nt_mirror(&nes_mem.ppu_mem_map);
 
     /* init cpu */
-    nes_cpu_init(&nes_cpu, &nes_mem);
+    nes_cpu_init(&nes_cpu, &nes_mem, &nes_memory);
 
 
 

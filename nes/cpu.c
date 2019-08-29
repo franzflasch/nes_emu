@@ -17,6 +17,8 @@
 
 uint8_t psg_io_read(void);
 
+//uint16_t memory_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_t access_type)
+
 static uint8_t memory_read_byte(nes_cpu_t *nes_cpu, uint16_t addr) 
 {
     /* Controller input must be immediately */
@@ -24,12 +26,19 @@ static uint8_t memory_read_byte(nes_cpu_t *nes_cpu, uint16_t addr)
 
     nes_cpu->memmap->last_reg_accessed = addr;
     nes_cpu->memmap->last_reg_read_write = REG_ACCESS_READ;
+
+    /* new interface */
+    memory_access(nes_cpu->nes_mem, addr, 0, ACCESS_READ_BYTE);
+
     return (*nes_cpu->memmap->cpu_mem_map.mem_virt[addr]); 
 }
 
 static uint16_t memory_read_word(nes_cpu_t *nes_cpu, uint16_t addr) {
     nes_cpu->memmap->last_reg_accessed = addr;
     nes_cpu->memmap->last_reg_read_write = REG_ACCESS_READ;
+
+    memory_access(nes_cpu->nes_mem, addr, 0, ACCESS_READ_WORD);
+
     return memory_read_byte(nes_cpu, addr) + (memory_read_byte(nes_cpu, addr + 1) << 8);
 }
 
@@ -38,6 +47,8 @@ static void memory_write_byte(nes_cpu_t *nes_cpu, uint16_t addr, uint8_t data)
     nes_cpu->memmap->last_reg_accessed = addr;
     nes_cpu->memmap->last_reg_read_write = REG_ACCESS_WRITE;
     *nes_cpu->memmap->cpu_mem_map.mem_virt[addr] = data;
+
+    memory_access(nes_cpu->nes_mem, addr, data, ACCESS_WRITE_BYTE);
 }
 
 static void memory_write_word(nes_cpu_t *nes_cpu, uint16_t addr, uint16_t data) {
@@ -45,6 +56,8 @@ static void memory_write_word(nes_cpu_t *nes_cpu, uint16_t addr, uint16_t data) 
     nes_cpu->memmap->last_reg_read_write = REG_ACCESS_WRITE;
     memory_write_byte(nes_cpu, addr, data & 0xFF);
     memory_write_byte(nes_cpu, addr + 1, data >> 8);
+
+    memory_access(nes_cpu->nes_mem, addr, data, ACCESS_WRITE_WORD);
 }
 
 static void check_page_cross_x(nes_cpu_t *nes_cpu)
@@ -888,7 +901,7 @@ uint32_t nes_cpu_nmi(nes_cpu_t *nes_cpu)
     return 4;
 }
 
-void nes_cpu_init(nes_cpu_t *nes_cpu, nes_memmap_t *memmap)
+void nes_cpu_init(nes_cpu_t *nes_cpu, nes_memmap_t *memmap, nes_mem_td *nes_mem)
 {
     memset(nes_cpu, 0, sizeof(*nes_cpu));
 
@@ -896,6 +909,7 @@ void nes_cpu_init(nes_cpu_t *nes_cpu, nes_memmap_t *memmap)
 
     /* At first set the memory interface */
     nes_cpu->memmap = memmap;
+    nes_cpu->nes_mem = nes_mem;
 
     //nes_cpu->regs.PC = 0xC000;
     nes_cpu->regs.PC = memory_read_word(nes_cpu, 0xFFFC); /* Reset vector */

@@ -57,16 +57,22 @@
 #define CPU_CONTROLLER2_REGISTER 0x4017
 
 
-#define REG_ACCESS_READ 1
-#define REG_ACCESS_WRITE 2
+#define ACCESS_WRITE_WORD 0
+#define ACCESS_WRITE_BYTE 1
+#define ACCESS_READ_WORD  2
+#define ACCESS_READ_BYTE  3
+#define ACCESS_FUNC_MAX   4
 
-typedef struct nes_cpu_mem_struct
+
+typedef struct nes_mem_struct
 {
     /* Only OxC808 bytes are actually used by the nes:
      * 0x10000−0x800−0x800−0x800−0x1ff8 = 0xC808
      */
-    uint8_t memory[CPU_MEM_PHYS_SIZE];
+    uint8_t cpu_memory[CPU_MEM_PHYS_SIZE];
 
-} nes_cpu_mem_td;
+} nes_mem_td;
+
+uint16_t memory_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_t access_type);
 
 #endif /* MEMORY_CONTROLLER_H */
