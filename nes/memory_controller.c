@@ -2,6 +2,7 @@
 #include <nes.h>
 #include <ppu.h>
 #include <memory_controller.h>
+#include <controller.h>
 #include <string.h>
 
 #define debug_print(fmt, ...) \
@@ -13,6 +14,20 @@ static uint16_t cpu_memory_address_demirror(uint16_t addr)
         return addr % CPU_MEM_INTERNAL_RAM_SIZE;
     else if(addr < CPU_MEM_APU_REGISTER_OFFSET)
         return CPU_MEM_PPU_REGISTER_OFFSET + (addr % CPU_MEM_PPU_REGISTER_SIZE);
+    else
+        return addr;
+}
+
+static uint16_t cpu_memory_address_to_phys(uint16_t addr)
+{
+    if(addr < (CPU_MEM_INTERNAL_RAM_OFFSET + CPU_MEM_INTERNAL_RAM_SIZE))
+        return addr;
+    else if(addr < CPU_MEM_APU_REGISTER_OFFSET)
+        return CPU_MEM_INTERNAL_RAM_OFFSET + CPU_MEM_INTERNAL_RAM_SIZE + (addr % CPU_MEM_PPU_REGISTER_SIZE);
+    else if(addr < CPU_MEM_APU_IO_REGISTER_OFFSET)
+        return CPU_MEM_INTERNAL_RAM_OFFSET + CPU_MEM_INTERNAL_RAM_SIZE + CPU_MEM_PPU_REGISTER_SIZE + (addr % CPU_MEM_APU_REGISTER_SIZE);
+    else if(addr < CPU_MEM_CRTRDG_REGISTER_OFFSET)
+        return CPU_MEM_INTERNAL_RAM_OFFSET + CPU_MEM_INTERNAL_RAM_SIZE + CPU_MEM_PPU_REGISTER_SIZE + CPU_MEM_APU_REGISTER_SIZE + (addr % CPU_MEM_APU_IO_REGISTER_SIZE);
     else
         return addr;
 }
@@ -122,32 +137,47 @@ static uint16_t (*prg_access_funcs[ACCESS_FUNC_MAX])(nes_mem_td *memmap, uint16_
 
 uint16_t cpu_memory_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_t access_type)
 {
-    uint16_t actual_addr = cpu_memory_address_demirror(addr);
+    uint16_t demirrored_addr = cpu_memory_address_demirror(addr);
+    uint16_t phys_addr = cpu_memory_address_to_phys(demirrored_addr);
 
-    if(check_is_ppu_reg(actual_addr))
+    //printf("CPU addr:%x demirrored_addr:%x phys_addr:%x\n", addr, demirrored_addr, phys_addr);
+
+    if(check_is_ppu_reg(demirrored_addr))
     {
-        if(access_type == ACCESS_READ_BYTE)
-        {
-            printf("PPU READ %x %x\n", addr, ppu_reg_access(memmap, addr, 0, access_type));
-        }
-        else
-        {
-            printf("PPU WRITE %x %x\n", addr, data);
-        }
-        return ppu_reg_access(memmap, addr, data, access_type);
+        // if(access_type == ACCESS_READ_BYTE)
+        // {
+        //     printf("PPU READ %x %x\n", addr, ppu_reg_access(memmap, demirrored_addr, 0, access_type));
+        // }
+        // else
+        // {
+        //     printf("PPU WRITE %x %x\n", addr, data);
+        // }
+        return ppu_reg_access(memmap, demirrored_addr, data, access_type);
     }
-    else if(check_is_controller_reg(actual_addr))
+    else if(check_is_controller_reg(demirrored_addr))
     {
+        if(access_type == ACCESS_WRITE_BYTE)
+        {
+            psg_io_write(data);
+        }
+        else if (access_type == ACCESS_READ_BYTE)
+        {
+            return psg_io_read();
+        }
         return 0;
-        //return controller_access_funcs[access_type](memmap, actual_addr, data);
     }
-    else if(check_is_prg_rom(actual_addr))
+    else if(check_is_prg_rom(demirrored_addr))
     {
-        return prg_access_funcs[access_type](memmap, actual_addr-CPU_MEM_PRG_LOCATION0, data);
+        return prg_access_funcs[access_type](memmap, demirrored_addr-CPU_MEM_PRG_LOCATION0, data);
     }
     else
     {
-        return cpu_access_funcs[access_type](memmap, actual_addr, data);
+        if(phys_addr >= CPU_MEM_PHYS_SIZE)
+        {
+            printf("Invalid CPU mem access! %x\n", phys_addr);
+            while(1);
+        }
+        return cpu_access_funcs[access_type](memmap, phys_addr, data);
     }
 }
 
@@ -156,18 +186,32 @@ static uint16_t ppu_memory_address_demirror(uint16_t addr)
 {
     if(addr < PPU_MEM_NAME_TABLE_MIRRORS_OFFSET)
         return addr;
-    else if(addr < PPU_MEM_NAME_TABLE1_MIRROR_OFFSET)
-        return PPU_MEM_NAME_TABLE0_OFFSET + (addr % PPU_MEM_NAME_TABLE_MIRRORS_REPEAT);
-    else if(addr < PPU_MEM_NAME_TABLE2_MIRROR_OFFSET)
-        return PPU_MEM_NAME_TABLE1_OFFSET + (addr % PPU_MEM_NAME_TABLE_MIRRORS_REPEAT);
-    else if(addr < PPU_MEM_NAME_TABLE3_MIRROR_OFFSET)
-        return PPU_MEM_NAME_TABLE2_OFFSET + (addr % PPU_MEM_NAME_TABLE_MIRRORS_REPEAT);
-    else if(addr < PPU_MEM_NAME_TABLE3_MIRROR_OFFSET + 0x2FF) /* Last one only goes to 3EFF */
-        return PPU_MEM_NAME_TABLE3_OFFSET + (addr % 0x2FF);
+    else if(addr < PPU_MEM_PALETTE_RAM_OFFSET)
+        return PPU_MEM_NAME_TABLE0_OFFSET + (addr % 0x400);
+    else if(addr == 0x3F10) 
+        return 0x3F00;
+    else if(addr == 0x3F14) 
+        return 0x3F04;
+    else if(addr == 0x3F18) 
+        return 0x3F08;
+    else if(addr == 0x3F1C) 
+        return 0x3F0C;
     else if(addr < PPU_MEM_PALETTE_RAM_MIRRORS_OFFSET)
         return addr;
     else if(addr < PPU_MEM_SIZE)
         return PPU_MEM_PALETTE_RAM_OFFSET + (addr % PPU_MEM_PALETTE_RAM_MIRRORS_REPEAT);
+    else
+    {
+        return addr;
+    }
+}
+
+static uint16_t ppu_memory_address_to_phys(uint16_t addr)
+{
+    if(addr < PPU_MEM_NAME_TABLE_MIRRORS_OFFSET)
+        return addr;
+    else if(addr < PPU_MEM_PALETTE_RAM_MIRRORS_OFFSET)
+        return (PPU_MEM_NAME_TABLE3_OFFSET + PPU_MEM_NAME_TABLE3_SIZE + (addr % (PPU_MEM_PALETTE_RAM_SIZE)));
     else
         return addr;
 }
@@ -206,9 +250,15 @@ static uint16_t (*ppu_access_funcs[ACCESS_FUNC_MAX])(nes_mem_td *memmap, uint16_
 
 uint16_t ppu_memory_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_t access_type)
 {
-    uint16_t actual_addr = ppu_memory_address_demirror(addr);
+    uint16_t demirrored_addr = ppu_memory_address_demirror(addr);
+    uint16_t phys_addr = ppu_memory_address_to_phys(demirrored_addr);
 
-    //printf("addr:%x actual addr:%x\n", addr, actual_addr);
+    //printf("PPU %d addr:%x demirrored_addr:%x phys_addr:%x\n", access_type, addr, demirrored_addr, phys_addr);
 
-    return ppu_access_funcs[access_type](memmap, actual_addr, data);
+    if(phys_addr >= PPU_MEM_PHYS_SIZE)
+    {
+        printf("Invalid PPU mem access! %x max: %x\n", phys_addr, PPU_MEM_PHYS_SIZE);
+        while(1);
+    }
+    return ppu_access_funcs[access_type](memmap, phys_addr, data);
 }

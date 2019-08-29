@@ -45,7 +45,7 @@ int nes_cart_load_rom(nes_cartridge_t *nes_cart, char *rom)
         //memory_write_byte_cpu(nes_cart, CPU_MEM_PRG_LOCATION1+i, tmp);
 
         cpu_memory_access(nes_cart->nes_mem, CPU_MEM_PRG_LOCATION0+i, tmp, ACCESS_WRITE_BYTE);
-        //cpu_memory_access(nes_cart->nes_mem, CPU_MEM_PRG_LOCATION1+i, tmp, ACCESS_WRITE_BYTE);
+        cpu_memory_access(nes_cart->nes_mem, CPU_MEM_PRG_LOCATION1+i, tmp, ACCESS_WRITE_BYTE);
     }
 
     for(i=0;i<nes_cart->chr_rom_size;i++)
@@ -60,7 +60,7 @@ int nes_cart_load_rom(nes_cartridge_t *nes_cart, char *rom)
         //memory_write_byte_ppu(nes_cart, PPU_MEM_PATTERN_TABLE1_OFFSET+i, tmp);
 
         ppu_memory_access(nes_cart->nes_mem, PPU_MEM_PATTERN_TABLE0_OFFSET+i, tmp, ACCESS_WRITE_BYTE);
-        //ppu_memory_access(nes_cart->nes_mem, PPU_MEM_PATTERN_TABLE1_OFFSET+i, tmp, ACCESS_WRITE_BYTE);
+        ppu_memory_access(nes_cart->nes_mem, PPU_MEM_PATTERN_TABLE1_OFFSET+i, tmp, ACCESS_WRITE_BYTE);
     }
 
     //memmap->ppu_mem_map.mirroring = nes_cart->header[6] & 0x1;

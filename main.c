@@ -3,7 +3,6 @@
 
 /* NES specific */
 #include <nes.h>
-#include <memory.h>
 #include <ppu.h>
 #include <cpu.h>
 #include <cartridge.h>
@@ -496,8 +495,8 @@ int main(int argc, char *argv[])
     SDL_Window *window = SDL_CreateWindow("nes_emu",
                                           SDL_WINDOWPOS_UNDEFINED,
                                           SDL_WINDOWPOS_UNDEFINED,
-                                          256*1,
-                                          240*1,
+                                          256*3,
+                                          240*3,
                                           SDL_WINDOW_OPENGL);
     if (window == NULL)
     {
@@ -562,6 +561,11 @@ int main(int argc, char *argv[])
         // for(int i=0x2400;i<0x27FF;i++)
         // {
         //     printf("Nametable 1: %x %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i],  (uint8_t)ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
+        // }
+
+        // for(int i=0x3F00;i<=0x3F1F;i++)
+        // {
+        //     printf("COLOR: %x %x\n", i, ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
         // }
 
         SDL_UpdateTexture(texture, NULL, nes_ppu.screen_bitmap, 256 * sizeof(Uint32));
