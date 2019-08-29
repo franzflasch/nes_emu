@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <memory.h>
+#include <memory_controller.h>
 
 typedef struct cpu_registers_s
 {
@@ -41,9 +42,12 @@ typedef struct nes_cpu_s
 	/* Mem interface */
 	nes_memmap_t *memmap;
 
+	/* New interface */
+	nes_mem_td *nes_mem;
+
 } nes_cpu_t;
 
-void nes_cpu_init(nes_cpu_t *nes_cpu, nes_memmap_t *nes_memmap);
+void nes_cpu_init(nes_cpu_t *nes_cpu, nes_memmap_t *memmap, nes_mem_td *nes_mem);
 uint32_t nes_cpu_run(nes_cpu_t *nes_cpu);
 uint32_t nes_cpu_nmi(nes_cpu_t *nes_cpu);
 void nes_cpu_print_state(nes_cpu_t *nes_cpu, uint8_t opcode);
