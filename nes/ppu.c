@@ -39,6 +39,7 @@ uint16_t ppu_reg_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_
 
         if(addr == CPU_MEM_PPU_CTRL_REGISTER)
         {
+            //printf("ctrl write!: %x\n", data);
             memmap->ppu_regs.ctrl = data;
             /* Reset vram nametable address */
             memmap->internal_t &= ~(0x3 << 10);
@@ -76,7 +77,7 @@ uint16_t ppu_reg_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_
                 while(1);
             }
 
-            printf("COPY PPU %x %x \n", memmap->internal_v, memmap->ppu_regs.data);
+            //printf("COPY PPU %x %x \n", memmap->internal_v, memmap->ppu_regs.data);
             ppu_memory_access(memmap, memmap->internal_v, memmap->ppu_regs.data, ACCESS_WRITE_BYTE);
 
             /* check address increment bit */
@@ -141,6 +142,9 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
     uint8_t color_pallete_index = 0;
     ppu_color_pallete_t color_pallete_value = { 0 };
 
+
+    //printf("ppu_ctrl: %x\n", nes_ppu->nes_memory->ppu_regs.ctrl);
+
     nes_ppu->current_pixel++;
     if(nes_ppu->current_pixel >= 340)
     {
@@ -181,7 +185,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
     /* actual pixel generation begins here */
     if(nes_ppu->nes_memory->ppu_regs.ctrl & PPU_CTRL_SPRITE_SIZE)
     {
-        printf("Spritesize of 8x16 currently not supported\n");
+        printf("Spritesize of 8x16 currently not supported %x\n", nes_ppu->nes_memory->ppu_regs.ctrl);
         while(1);
     }
 
@@ -242,7 +246,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
         attribute_table_load_addr = 0x23C0 | (nes_ppu->nes_memory->internal_v & 0x0C00) | ((nes_ppu->nes_memory->internal_v >> 4) & 0x38) | ((nes_ppu->nes_memory->internal_v >> 2) & 0x07);
         //attribute_table_load_addr = (PPU_MEM_ATTRIBUTE_TABLE0_OFFSET + nt_offset + (0x8 * (current_pixel_y/32)) + ((current_pixel_with_scroll_offset_x)/32));
         //attribute_bits = (*nes_ppu->memmap->ppu_mem_map.mem_virt[attribute_table_load_addr] >> attribute_bit_quadrant) & 0x3;
-        attribute_bits = (uint8_t)ppu_memory_access(nes_ppu->nes_memory, attribute_table_load_addr, 0, ACCESS_READ_BYTE);
+        attribute_bits = ((uint8_t)ppu_memory_access(nes_ppu->nes_memory, attribute_table_load_addr, 0, ACCESS_READ_BYTE) >> attribute_bit_quadrant) & 0x3;
 
         color_pallete_address = PPU_MEM_PALETTE_RAM_OFFSET + (attribute_bits << 2) + ((tile_high_bit<<1) | tile_low_bit);
         /* use backdrop color (0x3F00) */

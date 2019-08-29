@@ -120,7 +120,7 @@
                           PPU_MEM_NAME_TABLE1_SIZE + \
                           PPU_MEM_NAME_TABLE2_SIZE + \
                           PPU_MEM_NAME_TABLE3_SIZE + \
-                          PPU_MEM_PALETTE_RAM_SIZE - PPU_MEM_PALETTE_INTERNAL_MIRRORS
+                          PPU_MEM_PALETTE_RAM_SIZE // - PPU_MEM_PALETTE_INTERNAL_MIRRORS
 #define PPU_MEM_VIRT_SIZE 0x4000
 #define PPU_MEM_OAMD_SIZE 0x0100
 
@@ -188,7 +188,7 @@ typedef struct nes_mem_struct
     /* Only OxC808 bytes are actually used by the nes:
      * 0x10000−0x800−0x800−0x800−0x1ff8 = 0xC808
      */
-    uint8_t cpu_memory[CPU_MEM_PHYS_SIZE + CPU_MEM_PRG_SIZE0 + CPU_MEM_PRG_SIZE1];
+    uint8_t cpu_memory[CPU_MEM_PHYS_SIZE];
 
     /* Cartridge space */
     uint8_t cpu_prg_memory[CPU_MEM_PRG_SIZE0+CPU_MEM_PRG_SIZE1];

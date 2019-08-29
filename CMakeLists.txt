@@ -12,7 +12,7 @@ set(CMAKE_CXX_FLAGS "-Wall -Werror")
 set (nes_emu_VERSION_MAJOR 0)
 set (nes_emu_VERSION_MINOR 0)
 
-set(CMAKE_C_FLAGS_RELEASE "-O3")
+set(CMAKE_C_FLAGS_RELEASE "-O3 -g")
 
 find_package(SDL2 REQUIRED)
 include_directories(nes_emu ${SDL2_INCLUDE_DIRS})
