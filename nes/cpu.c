@@ -852,8 +852,7 @@ uint32_t nes_cpu_run(nes_cpu_t *nes_cpu)
         case 0xFE: cpu_addressing_absolute_x(nes_cpu);  cpu_inc(nes_cpu);  cycles += 7; break;
         case 0xFF: cpu_addressing_absolute_x(nes_cpu);  cpu_inc(nes_cpu);  cpu_sbc(nes_cpu);  cycles += 7; break;
         default:
-            printf("!!!Unknown instruction: %x\n", opcode);
-            while(1);
+            die("!!!Unknown instruction: %x\n", opcode);
             break;
     }
     cycles += nes_cpu->additional_cycles;

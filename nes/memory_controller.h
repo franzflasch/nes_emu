@@ -200,7 +200,7 @@ typedef struct nes_mem_struct
 
     /* PPU regs shared with the CPU */
     ppu_regs_t ppu_regs;
-    uint8_t oam_memory[256];
+    uint8_t oam_memory[PPU_MEM_OAMD_SIZE];
     uint8_t internal_w;
     uint16_t internal_t;
     uint16_t internal_v;
