@@ -10,6 +10,7 @@
 #define PPU_CTRL_REG_GEN_NMI           (0x1 << 7)
 #define PPU_CTRL_SPRITE_SIZE           (0x1 << 5)
 #define PPU_CTRL_BG_PATTERN_TABLE_ADDR (0x1 << 4)
+#define PPU_CTRL_VRAM_INCREMENT        (0x1 << 2)
 #define PPU_CTRL_BASE_NAME_TABLE_ADDR  (0x3 << 0)
 
 #define PPU_MASK_SHOW_BG       (1 << 3)
@@ -42,7 +43,6 @@ uint16_t ppu_reg_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_
 
         if(addr == CPU_MEM_PPU_CTRL_REGISTER)
         {
-            //printf("ctrl write!: %x\n", data);
             memmap->ppu_regs.ctrl = data;
             /* Reset vram nametable address */
             memmap->internal_t &= ~(0x3 << 10);
@@ -54,12 +54,10 @@ uint16_t ppu_reg_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_
         }
         else if(addr == CPU_MEM_PPU_OAMADDR_REGISTER)
         {
-            printf("OAM ADDR! %x\n", data);
             memmap->ppu_regs.oamaddr = data;
         }
         else if(addr == CPU_MEM_PPU_OAMDATA_REGISTER)
         {
-            printf("OAM DATA! %x\n", data);
             memmap->oam_memory[memmap->ppu_regs.oamaddr] = data;
             memmap->ppu_regs.oamaddr++;
         }
@@ -90,11 +88,10 @@ uint16_t ppu_reg_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_
                 die("ILLEGAL ADDRESS: %x\n", memmap->internal_v);
             }
 
-            //printf("COPY PPU %x %x \n", memmap->internal_v, memmap->ppu_regs.data);
             ppu_memory_access(memmap, memmap->internal_v, memmap->ppu_regs.data, ACCESS_WRITE_BYTE);
 
             /* check address increment bit */
-            memmap->internal_v += (memmap->ppu_regs.ctrl & 0x04) ? 32 : 1;
+            memmap->vram_add = (memmap->ppu_regs.ctrl & PPU_CTRL_VRAM_INCREMENT) ? 32 : 1;
         }
         else if(addr == CPU_MEM_PPU_SCROLL_REGISTER)
         {
@@ -120,7 +117,6 @@ uint16_t ppu_reg_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_
         {
             for(i=0;i<256;i++)
             {
-                //printf("OAM DMA! %x\n", ((data << 8) | i));
                 memmap->oam_memory[i] = (uint8_t)cpu_memory_access(memmap, ((data << 8) | i), 0, ACCESS_READ_BYTE);
             }
             //memmap->oam_memory[memmap->ppu_regs.oamaddr] = data;
@@ -137,9 +133,28 @@ uint16_t ppu_reg_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_
             memmap->internal_w = 0;
             return tmp_status;
         }
+        else if(addr == CPU_MEM_PPU_DATA_REGISTER)
+        {
+            uint8_t latched = memmap->vram_latch;
+            uint8_t retval = 0;
+
+            if(memmap->internal_v >= PPU_MEM_SIZE)
+            {
+                die("ILLEGAL ADDRESS: %x\n", memmap->internal_v);
+            }
+
+            memmap->vram_latch = (uint8_t)ppu_memory_access(memmap, memmap->internal_v, 0, ACCESS_READ_BYTE);
+
+            if(memmap->internal_v >= PPU_MEM_PALETTE_RAM_OFFSET)
+                retval = memmap->vram_latch;
+            else
+                retval = latched;
+
+            memmap->vram_add = (memmap->ppu_regs.ctrl & PPU_CTRL_VRAM_INCREMENT) ? 32 : 1;
+            return retval;
+        }
         else if(addr == CPU_MEM_PPU_OAMDATA_REGISTER)
         {
-            //printf("OAM DATA READ! %x\n", data);
             return memmap->oam_memory[memmap->ppu_regs.oamaddr];
         }
     }
@@ -168,9 +183,6 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
     uint16_t color_pallete_address = 0;
     uint8_t color_pallete_index = 0;
     ppu_color_pallete_t color_pallete_value = { 0 };
-
-
-    //printf("ppu_ctrl: %x\n", nes_ppu->nes_memory->ppu_regs.ctrl);
 
     nes_ppu->current_pixel++;
     if(nes_ppu->current_pixel >= 340)
@@ -215,13 +227,16 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
         die("Spritesize of 8x16 currently not supported %x\n", nes_ppu->nes_memory->ppu_regs.ctrl);
     }
 
-    //static uint16_t last_scroll_x_val = 0;
-    uint16_t current_pixel_x = nes_ppu->current_pixel;// + nes_ppu->scroll_offset_x;
-    uint16_t current_pixel_y = nes_ppu->current_scan_line;// + nes_ppu->scroll_offset_y;
+    uint16_t current_pixel_x = nes_ppu->current_pixel;
+    uint16_t current_pixel_y = nes_ppu->current_scan_line;
     uint16_t scroll_offset_x = ((nes_ppu->nes_memory->internal_t & 0x1f) << 3) | (nes_ppu->nes_memory->internal_x & 0x7);
     uint16_t current_pixel_with_scroll_offset_x = (current_pixel_x + scroll_offset_x) % 256;
     uint16_t nt_offset = (nes_ppu->nes_memory->internal_t & (0x3 << 10)) ? 0x400 : 0;
-    //uint16_t nt_offset = ((nes_ppu->regs->ctrl & PPU_CTRL_BASE_NAME_TABLE_ADDR) && 0x1 ) ? 0x400 : 0;
+
+
+    /* Increment vreg after 2007 access */
+    nes_ppu->nes_memory->internal_v += nes_ppu->nes_memory->vram_add;
+    nes_ppu->nes_memory->vram_add = 0;
 
     if((nes_ppu->current_scan_line < 240) && (nes_ppu->current_pixel < 256) && (nes_ppu->nes_memory->ppu_regs.mask & PPU_MASK_SHOW_BG))
     {
@@ -233,7 +248,6 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
                 nt_offset = 0x00;
         }
         
-        /* Update v reg */
         nes_ppu->nes_memory->internal_v &= ~(0x3 << 10);
         nes_ppu->nes_memory->internal_v |= nt_offset;
         nes_ppu->nes_memory->internal_v &= ~0x001F;
@@ -244,8 +258,6 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
         name_table_load_addr = 0x2000 | (nes_ppu->nes_memory->internal_v & 0x0FFF);
 
         current_tile_pixel_row = current_pixel_y%8;
-
-        //printf("crtl: %x\n", nes_ppu->nes_memory->ppu_regs.ctrl);
 
         /* get pattern from table */
         pattern_table_load_addr = (nes_ppu->nes_memory->ppu_regs.ctrl & PPU_CTRL_BG_PATTERN_TABLE_ADDR) ? PPU_MEM_PATTERN_TABLE1_OFFSET : PPU_MEM_PATTERN_TABLE0_OFFSET;

@@ -122,8 +122,8 @@ int main(int argc, char *argv[])
     SDL_Window *window = SDL_CreateWindow("nes_emu",
                                           SDL_WINDOWPOS_UNDEFINED,
                                           SDL_WINDOWPOS_UNDEFINED,
-                                          256*1,
-                                          240*1,
+                                          256*3,
+                                          240*3,
                                           SDL_WINDOW_OPENGL);
     if (window == NULL)
     {
@@ -162,10 +162,9 @@ int main(int argc, char *argv[])
 
             // ppu_start:
 
-            ppu_status = 0;
-
             /* the ppu runs at a 3 times higher clock rate than the cpu
             so we need to give the ppu some clocks here to catchup */
+            ppu_status = 0;
             for(ppu_clock_index=0;ppu_clock_index<(3*cpu_clocks);ppu_clock_index++)
             {
                 ppu_status |= nes_ppu_run(&nes_ppu, nes_cpu.num_cycles);
@@ -182,10 +181,10 @@ int main(int argc, char *argv[])
             if(ppu_status & PPU_STATUS_FRAME_READY) break;
         }
 
-        for(int i=0x0000;i<0x0FFF;i++)
-        {
-            printf("Pattern Table 0: %x %x\n", i, (uint8_t)ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
-        }
+        // for(int i=0x0000;i<0x0FFF;i++)
+        // {
+        //     printf("Pattern Table 0: %x %x\n", i, (uint8_t)ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
+        // }
 
         // for(int i=0x1000;i<0x1FFF;i++)
         // {
@@ -198,9 +197,15 @@ int main(int argc, char *argv[])
         //     printf("Nametable 0: %x %x\n", i, (uint8_t)ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
         // }
 
+        // /* Nametable 1 contents */
+        // for(int i=0x2400;i<0x27FF;i++)
+        // {
+        //     printf("Nametable 1: %x %x\n", i, (uint8_t)ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
+        // }
+
         // for(int i=0x3F00;i<=0x3F1F;i++)
         // {
-        //     printf("COLOR: %x %x\n", i, ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
+        //     printf("PALLETE: %x %x\n", i, ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
         // }
 
         // for(int i=0;i<256;i++)

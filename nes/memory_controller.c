@@ -127,11 +127,6 @@ uint16_t cpu_memory_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uin
 
     //printf("CPU addr:%x demirrored_addr:%x phys_addr:%x\n", addr, demirrored_addr, phys_addr);
 
-    if(addr == 0x4017)
-    {
-        printf("APU: %x\n", addr);
-    }
-
     if(check_is_ppu_reg(demirrored_addr))
     {
         // if(access_type == ACCESS_READ_BYTE)
@@ -218,8 +213,6 @@ static uint16_t ppu_memory_read_word(nes_mem_td *memmap, uint16_t addr, uint16_t
 
 static uint16_t ppu_memory_write_byte(nes_mem_td *memmap, uint16_t addr, uint16_t data) 
 {
-    if(addr == 0x2085)
-        printf("PPU WRITE: %x %x\n", addr, data);
     memmap->ppu_memory[addr] = (uint8_t)data;
     return 0;
 }
