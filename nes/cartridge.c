@@ -35,8 +35,16 @@ int nes_cart_load_rom(nes_cartridge_t *nes_cart, char *rom)
             die("Err fread prg rom\n");
         }
 
-        cpu_memory_access(nes_cart->nes_mem, CPU_MEM_PRG_LOCATION0+i, tmp, ACCESS_WRITE_BYTE);
-        //cpu_memory_access(nes_cart->nes_mem, CPU_MEM_PRG_LOCATION1+i, tmp, ACCESS_WRITE_BYTE);
+        if(nes_cart->prg_rom_size == 0x4000)
+        {
+            cpu_memory_access(nes_cart->nes_mem, CPU_MEM_PRG_LOCATION0+i, tmp, ACCESS_WRITE_BYTE);
+            cpu_memory_access(nes_cart->nes_mem, CPU_MEM_PRG_LOCATION1+i, tmp, ACCESS_WRITE_BYTE);
+        }
+        else
+        {
+            cpu_memory_access(nes_cart->nes_mem, CPU_MEM_PRG_LOCATION0+i, tmp, ACCESS_WRITE_BYTE);
+        }
+        
     }
 
     for(i=0;i<nes_cart->chr_rom_size;i++)
