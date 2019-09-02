@@ -34,7 +34,7 @@ static uint16_t cpu_memory_address_to_phys(uint16_t addr)
 
 static uint8_t check_is_ppu_reg(uint16_t addr)
 {
-    if((addr >= CPU_MEM_PPU_REGISTER_OFFSET) && (addr < CPU_MEM_PPU_REGISTER_OFFSET+CPU_MEM_PPU_REGISTER_SIZE))
+    if( ((addr >= CPU_MEM_PPU_REGISTER_OFFSET) && (addr < CPU_MEM_PPU_REGISTER_OFFSET+CPU_MEM_PPU_REGISTER_SIZE)) || (addr == CPU_MEM_PPU_OAMDMA_REGISTER) )
     {
         return 1;
     }
@@ -80,14 +80,6 @@ static uint16_t cpu_memory_write_word(nes_mem_td *memmap, uint16_t addr, uint16_
     return 0;
 }
 
-// static uint16_t (*controller_access_funcs[ACCESS_FUNC_MAX])(nes_mem_td *memmap, uint16_t addr, uint16_t data) = 
-// {
-//     NULL,
-//     NULL,
-//     NULL,
-//     NULL
-// };
-
 static uint16_t (*cpu_access_funcs[ACCESS_FUNC_MAX])(nes_mem_td *memmap, uint16_t addr, uint16_t data) = 
 {
     cpu_memory_write_word,
@@ -118,14 +110,6 @@ static uint16_t prg_memory_write_word(nes_mem_td *memmap, uint16_t addr, uint16_
     prg_memory_write_byte(memmap, addr + 1, data >> 8);
     return 0;
 }
-
-// static uint16_t (*controller_access_funcs[ACCESS_FUNC_MAX])(nes_mem_td *memmap, uint16_t addr, uint16_t data) = 
-// {
-//     NULL,
-//     NULL,
-//     NULL,
-//     NULL
-// };
 
 static uint16_t (*prg_access_funcs[ACCESS_FUNC_MAX])(nes_mem_td *memmap, uint16_t addr, uint16_t data) = 
 {

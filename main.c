@@ -568,6 +568,11 @@ int main(int argc, char *argv[])
         //     printf("COLOR: %x %x\n", i, ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
         // }
 
+        for(int i=0;i<256;i++)
+        {
+            printf("OAM: %d %x\n", i, nes_memory.oam_memory[i]);
+        }
+
         SDL_UpdateTexture(texture, NULL, nes_ppu.screen_bitmap, 256 * sizeof(Uint32));
 
         // Randomly change the colour

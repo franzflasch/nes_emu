@@ -25,6 +25,8 @@ ppu_color_pallete_t color_pallete_2C02[] = {
 
 uint16_t ppu_reg_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_t access_type)
 {
+    uint16_t i = 0;
+
     if((access_type == ACCESS_READ_WORD) || (access_type == ACCESS_WRITE_WORD))
     {
         printf("Invalid PPU reg access!\n");
@@ -48,6 +50,18 @@ uint16_t ppu_reg_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_
         else if(addr == CPU_MEM_PPU_MASK_REGISTER)
         {
             memmap->ppu_regs.mask = data;
+        }
+        else if(addr == CPU_MEM_PPU_OAMADDR_REGISTER)
+        {
+            printf("OAM ADDR! %x\n", data);
+            memmap->ppu_regs.oamaddr = data;
+            //while(1);
+        }
+        else if(addr == CPU_MEM_PPU_OAMDATA_REGISTER)
+        {
+            printf("OAM DATA! %x\n", data);
+            memmap->oam_memory[memmap->ppu_regs.oamaddr] = data;
+            memmap->ppu_regs.oamaddr++;
         }
         else if(addr == CPU_MEM_PPU_ADDR_REGISTER)
         {
@@ -103,6 +117,15 @@ uint16_t ppu_reg_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_
             }
             memmap->internal_w = (memmap->internal_w + 1) % 2;
         }
+        else if(addr == CPU_MEM_PPU_OAMDMA_REGISTER)
+        {
+            for(i=0;i<256;i++)
+            {
+                //printf("OAM DMA! %x\n", ((data << 8) | i));
+                memmap->oam_memory[i] = (uint8_t)cpu_memory_access(memmap, ((data << 8) | i), 0, ACCESS_READ_BYTE);
+            }
+            //memmap->oam_memory[memmap->ppu_regs.oamaddr] = data;
+        }
     }
     /* read */
     else if(access_type == ACCESS_READ_BYTE)
@@ -114,6 +137,11 @@ uint16_t ppu_reg_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_
             //memmap->ppu_regs.status &= ~PPU_STATUS_REG_VBLANK;
             memmap->internal_w = 0;
             return tmp_status;
+        }
+        else if(addr == CPU_MEM_PPU_OAMDATA_REGISTER)
+        {
+            //printf("OAM DATA READ! %x\n", data);
+            return memmap->oam_memory[memmap->ppu_regs.oamaddr];
         }
     }
 
@@ -158,7 +186,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
     }
 
     /* FIXME: This is just for testing!! sprite 0 hit has to be implemented properly! */
-    if((nes_ppu->current_scan_line == 30) && (nes_ppu->current_pixel == 90))
+    if((nes_ppu->current_scan_line == 30) && (nes_ppu->current_pixel == 88))
     {
         nes_ppu->nes_memory->ppu_regs.status |= PPU_STATUS_SPRITE0_HIT;
     }
