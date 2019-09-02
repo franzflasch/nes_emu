@@ -2,6 +2,7 @@
 #define CPU_H
 
 #include <stdint.h>
+
 #include <memory_controller.h>
 
 typedef struct cpu_registers_s

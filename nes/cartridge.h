@@ -2,6 +2,7 @@
 #define CARTRIDGE_H
 
 #include <stdint.h>
+
 #include <memory_controller.h>
 
 #define ERR_FILE_NOT_EXIST              (1)
