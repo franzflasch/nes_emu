@@ -34,13 +34,6 @@ uint8_t nes_key_state(uint8_t b)
     SDL_PumpEvents();
     keyboard = SDL_GetKeyboardState(NULL);
 
-    // if (keyboard[SDL_SCANCODE_RETURN]) {
-    //     printf("<RETURN> is pressed.\n");
-    // }
-    // if (keyboard[SDL_SCANCODE_RIGHT] && keyboard[SDL_SCANCODE_UP]) {
-    //     printf("Right and Up Keys Pressed.\n");
-    // }
-
     switch (b)
     {
         case 0: // On / Off
