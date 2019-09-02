@@ -127,6 +127,11 @@ uint16_t cpu_memory_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uin
 
     //printf("CPU addr:%x demirrored_addr:%x phys_addr:%x\n", addr, demirrored_addr, phys_addr);
 
+    if(addr == 0x4017)
+    {
+        printf("APU: %x\n", addr);
+    }
+
     if(check_is_ppu_reg(demirrored_addr))
     {
         // if(access_type == ACCESS_READ_BYTE)
