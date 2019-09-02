@@ -129,7 +129,7 @@ uint16_t ppu_reg_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_
         {
             uint8_t tmp_status = memmap->ppu_regs.status;
             memmap->ppu_regs.addr = 0;
-            //memmap->ppu_regs.status &= ~PPU_STATUS_REG_VBLANK;
+            memmap->ppu_regs.status &= ~PPU_STATUS_REG_VBLANK;
             memmap->internal_w = 0;
             return tmp_status;
         }
@@ -234,7 +234,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
     uint16_t nt_offset = (nes_ppu->nes_memory->internal_t & (0x3 << 10)) ? 0x400 : 0;
 
 
-    /* Increment vreg after 2007 access */
+    /* Increment vreg after $2007 access */
     nes_ppu->nes_memory->internal_v += nes_ppu->nes_memory->vram_add;
     nes_ppu->nes_memory->vram_add = 0;
 
