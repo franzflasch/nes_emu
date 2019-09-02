@@ -159,8 +159,7 @@ uint16_t cpu_memory_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uin
     {
         if(phys_addr >= CPU_MEM_PHYS_SIZE)
         {
-            printf("Invalid CPU mem access! %x\n", phys_addr);
-            while(1);
+            die("Invalid CPU mem access! %x\n", phys_addr);
         }
         return cpu_access_funcs[access_type](memmap, phys_addr, data);
     }
@@ -214,6 +213,8 @@ static uint16_t ppu_memory_read_word(nes_mem_td *memmap, uint16_t addr, uint16_t
 
 static uint16_t ppu_memory_write_byte(nes_mem_td *memmap, uint16_t addr, uint16_t data) 
 {
+    if(addr == 0x2085)
+        printf("PPU WRITE: %x %x\n", addr, data);
     memmap->ppu_memory[addr] = (uint8_t)data;
     return 0;
 }
@@ -242,8 +243,7 @@ uint16_t ppu_memory_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uin
 
     if(phys_addr >= PPU_MEM_PHYS_SIZE)
     {
-        printf("Invalid PPU mem access! %x max: %x\n", phys_addr, PPU_MEM_PHYS_SIZE);
-        while(1);
+        die("Invalid PPU mem access! %x max: %x\n", phys_addr, PPU_MEM_PHYS_SIZE);
     }
     return ppu_access_funcs[access_type](memmap, phys_addr, data);
 }

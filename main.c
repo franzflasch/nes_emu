@@ -11,6 +11,16 @@
 #define debug_print(fmt, ...) \
             do { if (DEBUG_MAIN) printf(fmt, __VA_ARGS__); } while (0)
 
+
+void die (const char * format, ...)
+{
+    va_list vargs;
+    va_start (vargs, format);
+    vfprintf (stderr, format, vargs);
+    va_end (vargs);
+    exit (1);
+}
+
 #include <SDL2/SDL.h>
 
 #define FPS 60
@@ -72,8 +82,7 @@ int main(int argc, char *argv[])
 
     if(argc != 2)
     {
-        printf("Please specify rom file\n");
-        exit(-1);
+        die("Please specify rom file\n");
     }
 
     /* init memory map */
@@ -85,8 +94,7 @@ int main(int argc, char *argv[])
     /* load rom */
     if(nes_cart_load_rom(&nes_cart, argv[1]) != 0)
     {
-        printf("ROM does not exist\n");
-        exit(-2);
+        die("ROM does not exist\n");
     }
     nes_cart_print_rom_metadata(&nes_cart);
 
@@ -107,8 +115,7 @@ int main(int argc, char *argv[])
 
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
     {
-        printf("Failed to initialise SDL\n");
-        return -1;
+        die("Failed to initialise SDL\n");
     }
 
     // Create a window
@@ -120,15 +127,13 @@ int main(int argc, char *argv[])
                                           SDL_WINDOW_OPENGL);
     if (window == NULL)
     {
-        SDL_Log("Could not create a window: %s", SDL_GetError());
-        return -1;
+        die("Could not create a window: %s", SDL_GetError());
     }
 
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (renderer == NULL)
     {
-        SDL_Log("Could not create a renderer: %s", SDL_GetError());
-        return -1;
+        die("Could not create a renderer: %s", SDL_GetError());
     }
 
     SDL_Texture * texture = SDL_CreateTexture(renderer,
@@ -177,10 +182,20 @@ int main(int argc, char *argv[])
             if(ppu_status & PPU_STATUS_FRAME_READY) break;
         }
 
-        // /* Nametable 1 contents */
-        // for(int i=0x2400;i<0x27FF;i++)
+        for(int i=0x0000;i<0x0FFF;i++)
+        {
+            printf("Pattern Table 0: %x %x\n", i, (uint8_t)ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
+        }
+
+        // for(int i=0x1000;i<0x1FFF;i++)
         // {
-        //     printf("Nametable 1: %x %x %x\n", i, *nes_ppu.memmap->ppu_mem_map.mem_virt[i],  (uint8_t)ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
+        //     printf("Pattern Table 1: %x %x\n", i, (uint8_t)ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
+        // }
+
+        // /* Nametable 0 contents */
+        // for(int i=0x2000;i<0x23FF;i++)
+        // {
+        //     printf("Nametable 0: %x %x\n", i, (uint8_t)ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
         // }
 
         // for(int i=0x3F00;i<=0x3F1F;i++)
@@ -188,10 +203,10 @@ int main(int argc, char *argv[])
         //     printf("COLOR: %x %x\n", i, ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
         // }
 
-        for(int i=0;i<256;i++)
-        {
-            printf("OAM: %d %x\n", i, nes_memory.oam_memory[i]);
-        }
+        // for(int i=0;i<256;i++)
+        // {
+        //     printf("OAM: %d %x\n", i, nes_memory.oam_memory[i]);
+        // }
 
         SDL_UpdateTexture(texture, NULL, nes_ppu.screen_bitmap, 256 * sizeof(Uint32));
 

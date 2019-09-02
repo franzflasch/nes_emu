@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <nes.h>
 #include <cartridge.h>
 
 int nes_cart_load_rom(nes_cartridge_t *nes_cart, char *rom)
@@ -30,35 +31,30 @@ int nes_cart_load_rom(nes_cartridge_t *nes_cart, char *rom)
     for(i=0;i<nes_cart->prg_rom_size;i++)
     {
         if(fread(&tmp, sizeof(uint8_t), 1, fp) != 1) 
-            printf("Err fread\n");
-
-        //memory_write_byte_cpu(nes_cart, CPU_MEM_PRG_LOCATION0+i, tmp);
-        //memory_write_byte_cpu(nes_cart, CPU_MEM_PRG_LOCATION1+i, tmp);
+        {
+            die("Err fread prg rom\n");
+        }
 
         cpu_memory_access(nes_cart->nes_mem, CPU_MEM_PRG_LOCATION0+i, tmp, ACCESS_WRITE_BYTE);
-        cpu_memory_access(nes_cart->nes_mem, CPU_MEM_PRG_LOCATION1+i, tmp, ACCESS_WRITE_BYTE);
+        //cpu_memory_access(nes_cart->nes_mem, CPU_MEM_PRG_LOCATION1+i, tmp, ACCESS_WRITE_BYTE);
     }
 
     for(i=0;i<nes_cart->chr_rom_size;i++)
     {
         if(fread(&tmp, sizeof(uint8_t), 1, fp) != 1) 
         {
-            printf("Err fread chr rom\n");
-            while(1);
+            die("Err fread chr rom\n");
         }
 
-        //memory_write_byte_ppu(nes_cart, PPU_MEM_PATTERN_TABLE0_OFFSET+i, tmp);
-        //memory_write_byte_ppu(nes_cart, PPU_MEM_PATTERN_TABLE1_OFFSET+i, tmp);
-
         ppu_memory_access(nes_cart->nes_mem, PPU_MEM_PATTERN_TABLE0_OFFSET+i, tmp, ACCESS_WRITE_BYTE);
-        ppu_memory_access(nes_cart->nes_mem, PPU_MEM_PATTERN_TABLE1_OFFSET+i, tmp, ACCESS_WRITE_BYTE);
+        //ppu_memory_access(nes_cart->nes_mem, PPU_MEM_PATTERN_TABLE1_OFFSET+i, tmp, ACCESS_WRITE_BYTE);
     }
 
     //memmap->ppu_mem_map.mirroring = nes_cart->header[6] & 0x1;
 
     // for(i=0;i<nes_cart->chr_rom_size;i++)
     // {
-    //     printf("%02x ", nes_cart->chr_rom[i]);
+    //     printf("CHR %02x ", nes_cart->chr_rom[i]);
     //     if((i%8)==7) printf("\n");
     // }
     //exit(0);
@@ -96,7 +92,6 @@ void nes_cart_print_rom_metadata(nes_cartridge_t *nes_cart)
 
     if(mapper != 0)
     {
-        printf("Mapper %x is not supported\n", mapper);
-        //while(1);
+        die("Mapper %x is not supported\n", mapper);
     }
 }
