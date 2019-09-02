@@ -206,6 +206,9 @@ typedef struct nes_mem_struct
     uint16_t internal_v;
     uint8_t internal_x;
 
+    uint8_t vram_latch;
+    uint8_t vram_add;
+
 } nes_mem_td;
 
 uint16_t cpu_memory_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_t access_type);
