@@ -1,7 +1,9 @@
 #include <stdio.h>
+#include <string.h>
+
 #include <nes.h>
 #include <cpu.h>
-#include <string.h>
+
 
 #define debug_print(fmt, ...) \
             do { if (DEBUG_CPU) printf(fmt, __VA_ARGS__); } while (0)

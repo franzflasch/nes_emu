@@ -2,6 +2,7 @@
 #define PPU_H
 
 #include <stdint.h>
+
 #include <memory_controller.h>
 
 #define PPU_STATUS_FRAME_READY (1 << 0)

@@ -1,17 +1,8 @@
-#include <cartridge.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// static void memory_write_byte_cpu(nes_cartridge_t *nes_cart, uint16_t addr, uint8_t data) 
-// {
-//     *nes_cart->memmap->cpu_mem_map.mem_virt[addr] = data;
-// }
-
-// static void memory_write_byte_ppu(nes_cartridge_t *nes_cart, uint16_t addr, uint8_t data) 
-// {
-//     *nes_cart->memmap->ppu_mem_map.mem_virt[addr] = data;
-// }
+#include <cartridge.h>
 
 int nes_cart_load_rom(nes_cartridge_t *nes_cart, char *rom)
 {

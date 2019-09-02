@@ -1,9 +1,10 @@
 #include <stdio.h>
+#include <string.h>
+
 #include <nes.h>
 #include <ppu.h>
 #include <memory_controller.h>
 #include <controller.h>
-#include <string.h>
 
 #define debug_print(fmt, ...) \
             do { if (DEBUG_MEMORY) printf(fmt, __VA_ARGS__); } while (0)
