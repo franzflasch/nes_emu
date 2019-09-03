@@ -16,7 +16,8 @@ typedef struct nes_ppu_s
 
     nes_mem_td *nes_memory;
 
-    uint32_t screen_bitmap[256*240];
+    uint32_t bg_bitmap[256*240];
+    uint32_t sprite_bitmap[256*240];
 
 } nes_ppu_t;
 
