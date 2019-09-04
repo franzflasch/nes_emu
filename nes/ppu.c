@@ -126,13 +126,37 @@ uint16_t ppu_reg_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_
     /* read */
     else if(access_type == ACCESS_READ_BYTE)
     {
-        if(addr == CPU_MEM_PPU_STATUS_REGISTER)
+        if(addr == CPU_MEM_PPU_CTRL_REGISTER)
+        {
+            return memmap->ppu_regs.ctrl;
+        }
+        else if(addr == CPU_MEM_PPU_MASK_REGISTER)
+        {
+            return memmap->ppu_regs.mask;
+        }
+        else if(addr == CPU_MEM_PPU_STATUS_REGISTER)
         {
             uint8_t tmp_status = memmap->ppu_regs.status;
             memmap->ppu_regs.addr = 0;
             memmap->ppu_regs.status &= ~PPU_STATUS_REG_VBLANK;
             memmap->internal_w = 0;
             return tmp_status;
+        }
+        else if(addr == CPU_MEM_PPU_OAMADDR_REGISTER)
+        {
+            return memmap->ppu_regs.oamaddr;
+        }
+        else if(addr == CPU_MEM_PPU_OAMDATA_REGISTER)
+        {
+            return memmap->oam_memory[memmap->ppu_regs.oamaddr];
+        }
+        else if(addr == CPU_MEM_PPU_SCROLL_REGISTER)
+        {
+            return memmap->ppu_regs.scroll;
+        }
+        else if(addr == CPU_MEM_PPU_ADDR_REGISTER)
+        {
+            return memmap->ppu_regs.addr;
         }
         else if(addr == CPU_MEM_PPU_DATA_REGISTER)
         {
@@ -154,10 +178,6 @@ uint16_t ppu_reg_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_
             memmap->vram_add = (memmap->ppu_regs.ctrl & PPU_CTRL_VRAM_INCREMENT) ? 32 : 1;
             return retval;
         }
-        else if(addr == CPU_MEM_PPU_OAMDATA_REGISTER)
-        {
-            return memmap->oam_memory[memmap->ppu_regs.oamaddr];
-        }
     }
 
     return 0;
@@ -170,14 +190,16 @@ void nes_ppu_init(nes_ppu_t *nes_ppu, nes_mem_td *nes_memory)
     nes_ppu->nes_memory = nes_memory;
 }
 
+extern uint8_t sprite_0_hit_debug;
+
 uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
 {   
     uint8_t ppu_ret_status = 0;
     uint16_t pattern_table_load_addr = 0;
     uint16_t name_table_load_addr = 0;
-    uint8_t tile_low_bit, tile_high_bit = 0;
-    uint8_t pattern_low_val, pattern_high_val = 0;
-    uint8_t current_tile_pixel_col, current_tile_pixel_row = 0;
+    uint8_t tile_low_bit = 0, tile_high_bit = 0;
+    uint8_t pattern_low_val = 0, pattern_high_val = 0;
+    uint8_t current_tile_pixel_col = 0, current_tile_pixel_row = 0;
     uint16_t attribute_table_load_addr = 0;
     uint8_t attribute_bits = 0;
     uint8_t attribute_bit_quadrant = 0;
@@ -200,7 +222,8 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
     /* FIXME: This is just for testing!! sprite 0 hit has to be implemented properly! */
     if((nes_ppu->current_scan_line == 30) && (nes_ppu->current_pixel == 88))
     {
-        nes_ppu->nes_memory->ppu_regs.status |= PPU_STATUS_SPRITE0_HIT;
+        if(sprite_0_hit_debug)
+            nes_ppu->nes_memory->ppu_regs.status |= PPU_STATUS_SPRITE0_HIT;
     }
     else if((nes_ppu->current_scan_line == 241) && (nes_ppu->current_pixel == 1))
     {
@@ -332,7 +355,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
                             sprite_x_index = flip_vertical ? (1 << (x_index)) : (1 << (7-x_index));
                             if((sprite_val_low & sprite_x_index) || (sprite_val_high & sprite_x_index ))
                             {
-                                nes_ppu->sprite_bitmap[(sprite_start_pix_x+x_index) + (256*(sprite_start_pix_y+y_index))] = (0xFF << 24) | 
+                                nes_ppu->sprite_bitmap[((sprite_start_pix_x+x_index)%256) + (256*((sprite_start_pix_y+y_index)%240))] = (0xFF << 24) | 
                                                                                                                            (0xFF << 16) | 
                                                                                                                            (0xFF << 8) | 
                                                                                                                            (0xFF);
