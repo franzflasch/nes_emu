@@ -867,12 +867,15 @@ uint32_t nes_cpu_nmi(nes_cpu_t *nes_cpu)
     nes_cpu->regs.P |= FLAG_INTERRUPT;
     cpu_stack_push_word(nes_cpu, nes_cpu->regs.PC);
     cpu_stack_push_byte(nes_cpu, nes_cpu->regs.P);
-    nes_cpu->regs.P &= ~FLAG_UNUSED;
     nes_cpu->regs.PC = memory_read_word(nes_cpu, 0xfffa);
+    return 0;
+}
 
-    // FIXME: don't know how many cycles this takes. Didn't find anything about it.
-    // Assuming 4 for now, as the vbl_clear_time.nes test finishes successfully.
-    return 4;
+void nes_cpu_reset(nes_cpu_t *nes_cpu) {
+    nes_cpu->regs.S  -= 3;
+    nes_cpu->regs.P |= FLAG_INTERRUPT;
+    memory_write_byte(nes_cpu, 0x4015, 0);  // APU was silenced
+    nes_cpu->regs.PC = memory_read_word(nes_cpu, 0xfffc);
 }
 
 void nes_cpu_init(nes_cpu_t *nes_cpu, nes_mem_td *nes_mem)
@@ -894,5 +897,11 @@ void nes_cpu_init(nes_cpu_t *nes_cpu, nes_mem_td *nes_mem)
     nes_cpu->regs.A = 0;
     nes_cpu->regs.X = 0;
     nes_cpu->regs.Y = 0;
+
+    memory_write_byte(nes_cpu, 0x4017, 0); // frame irq enabled
+    memory_write_byte(nes_cpu, 0x4015, 0); // all channels disabled
+    for(uint16_t i = 0x4017; i <= 0x400f; i++) {
+        memory_write_byte(nes_cpu, i, 0);
+    }
 }
 

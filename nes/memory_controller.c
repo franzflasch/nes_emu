@@ -51,7 +51,7 @@ static uint8_t check_is_prg_rom(uint16_t addr)
 
 static uint8_t check_is_controller_reg(uint16_t addr)
 {
-    if((addr == CPU_CONTROLLER1_REGISTER))
+    if((addr == CPU_CONTROLLER1_REGISTER) || (addr == CPU_CONTROLLER2_REGISTER))
     {
         return 1;
     }
@@ -131,7 +131,7 @@ uint16_t cpu_memory_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uin
     {
         // if(access_type == ACCESS_READ_BYTE)
         // {
-        //     printf("PPU READ %x %x\n", addr, ppu_reg_access(memmap, demirrored_addr, 0, access_type));
+        //     printf("PPU READ %x\n", addr);
         // }
         // else
         // {
@@ -143,16 +143,26 @@ uint16_t cpu_memory_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uin
     {
         if(access_type == ACCESS_WRITE_BYTE)
         {
-            psg_io_write(data);
+            if(demirrored_addr == CPU_CONTROLLER1_REGISTER)
+                psg_io_write(data);
+            else if(demirrored_addr == CPU_CONTROLLER2_REGISTER)
+                psg_io_write2(data);
         }
         else if (access_type == ACCESS_READ_BYTE)
         {
-            return psg_io_read();
+            if(demirrored_addr == CPU_CONTROLLER1_REGISTER)
+                return psg_io_read();
+            else if(demirrored_addr == CPU_CONTROLLER2_REGISTER)
+                psg_io_read2();
         }
         return 0;
     }
     else if(check_is_prg_rom(demirrored_addr))
     {
+        if((demirrored_addr-CPU_MEM_PRG_LOCATION0) >= (CPU_MEM_PRG_SIZE0+CPU_MEM_PRG_SIZE1))
+        {
+            die("Invalid PRG mem access! %x max: %x\n", (demirrored_addr-CPU_MEM_PRG_LOCATION0), CPU_MEM_PRG_SIZE0+CPU_MEM_PRG_SIZE1);
+        }
         return prg_access_funcs[access_type](memmap, demirrored_addr-CPU_MEM_PRG_LOCATION0, data);
     }
     else

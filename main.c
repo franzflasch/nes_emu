@@ -12,6 +12,8 @@
             do { if (DEBUG_MAIN) printf(fmt, __VA_ARGS__); } while (0)
 
 
+uint8_t sprite_0_hit_debug = 1;
+
 void die (const char * format, ...)
 {
     va_list vargs;
@@ -59,6 +61,33 @@ uint8_t nes_key_state(uint8_t b)
     }
 }
 
+uint8_t nes_key_state_ctrl2(uint8_t b)
+{
+    switch (b)
+    {
+        case 0: // On / Off
+            return 1;
+        case 1: // A
+            return 0;
+        case 2: // B
+            return 0;
+        case 3: // SELECT
+            return 0;
+        case 4: // START
+            return 0;
+        case 5: // UP
+            return 0;
+        case 6: // DOWN
+            return 0;
+        case 7: // LEFT
+            return 0;
+        case 8: // RIGHT
+            return 0;
+        default:
+            return 1;
+    }
+}
+
 int main(int argc, char *argv[])
 {
     //int i = 0;
@@ -96,6 +125,7 @@ int main(int argc, char *argv[])
 
     /* init cpu */
     nes_cpu_init(&nes_cpu, &nes_memory);
+    nes_cpu_reset(&nes_cpu);
 
     /* init ppu */
     nes_ppu_init(&nes_ppu, &nes_memory);
@@ -115,8 +145,8 @@ int main(int argc, char *argv[])
     SDL_Window *window = SDL_CreateWindow("nes_emu",
                                           SDL_WINDOWPOS_UNDEFINED,
                                           SDL_WINDOWPOS_UNDEFINED,
-                                          256*1,
-                                          240*1,
+                                          256*4,
+                                          240*4,
                                           SDL_WINDOW_OPENGL);
     if (window == NULL)
     {
@@ -174,6 +204,21 @@ int main(int argc, char *argv[])
             if(ppu_status & PPU_STATUS_FRAME_READY) break;
         }
 
+        const Uint8* keyboard;
+        SDL_PumpEvents();
+        keyboard = SDL_GetKeyboardState(NULL);
+
+        if (keyboard[SDL_SCANCODE_P]) {
+            printf("SPRITE0 HIT is on.\n");
+            sprite_0_hit_debug = 1;
+        }
+
+        if (keyboard[SDL_SCANCODE_O]) {
+            printf("SPRITE0 HIT is off.\n");
+            sprite_0_hit_debug = 0;
+        }
+
+
         // for(int i=0x0000;i<0x0FFF;i++)
         // {
         //     printf("Pattern Table 0: %x %x\n", i, (uint8_t)ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
@@ -206,7 +251,7 @@ int main(int argc, char *argv[])
         //     printf("OAM: %d %x\n", i, nes_memory.oam_memory[i]);
         // }
 
-        SDL_UpdateTexture(texture, NULL, nes_ppu.sprite_bitmap, 256 * sizeof(Uint32));
+        SDL_UpdateTexture(texture, NULL, nes_ppu.bg_bitmap, 256 * sizeof(Uint32));
 
         // Randomly change the colour
         // Uint8 red = rand() % 255;
