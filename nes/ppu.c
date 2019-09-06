@@ -195,6 +195,8 @@ extern uint8_t sprite_0_hit_debug;
 uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
 {   
     uint8_t ppu_ret_status = 0;
+
+    /* Nametable Vars */
     uint16_t pattern_table_load_addr = 0;
     uint16_t name_table_load_addr = 0;
     uint8_t tile_low_bit = 0, tile_high_bit = 0;
@@ -206,6 +208,23 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
     uint16_t color_pallete_address = 0;
     uint8_t color_pallete_index = 0;
     ppu_color_pallete_t color_pallete_value = { 0 };
+    uint16_t scroll_offset_x = ((nes_ppu->nes_memory->internal_t & 0x1f) << 3) | (nes_ppu->nes_memory->internal_x & 0x7);
+    uint16_t current_pixel_with_scroll_offset_x = (nes_ppu->current_pixel + scroll_offset_x) % 256;
+    uint16_t nt_offset = (nes_ppu->nes_memory->internal_t & (0x3 << 10)) ? 0x400 : 0;
+
+    /* sprite variables */
+    uint16_t i = 0;
+    uint16_t x_index,y_index = 0;
+    uint8_t sprite_val_low = 0;
+    uint8_t sprite_val_high = 0;
+    uint8_t sprite_bit_low = 0;
+    uint8_t sprite_bit_high = 0;
+    uint16_t sprite_start_pix_x = 0;
+    uint16_t sprite_start_pix_y = 0;
+    uint8_t flip_vertical = 0;
+    uint8_t flip_horizontal = 0;
+    uint8_t sprite_x_index = 0;
+    uint8_t sprite_y_index = 0;
 
     nes_ppu->current_pixel++;
     if(nes_ppu->current_pixel >= 340)
@@ -251,25 +270,18 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
         die("Spritesize of 8x16 currently not supported %x\n", nes_ppu->nes_memory->ppu_regs.ctrl);
     }
 
-    uint16_t current_pixel_x = nes_ppu->current_pixel;
-    uint16_t current_pixel_y = nes_ppu->current_scan_line;
-    uint16_t scroll_offset_x = ((nes_ppu->nes_memory->internal_t & 0x1f) << 3) | (nes_ppu->nes_memory->internal_x & 0x7);
-    uint16_t current_pixel_with_scroll_offset_x = (current_pixel_x + scroll_offset_x) % 256;
-    uint16_t nt_offset = (nes_ppu->nes_memory->internal_t & (0x3 << 10)) ? 0x400 : 0;
-
-
     /* Increment vreg after $2007 access */
     nes_ppu->nes_memory->internal_v += nes_ppu->nes_memory->vram_add;
     nes_ppu->nes_memory->vram_add = 0;
 
     if((nes_ppu->current_scan_line < 240) && (nes_ppu->current_pixel < 256))
     {
-        current_tile_pixel_row = current_pixel_y%8;
+        current_tile_pixel_row = nes_ppu->current_scan_line%8;
         current_tile_pixel_col = 7-((current_pixel_with_scroll_offset_x)%8);
 
         if(nes_ppu->nes_memory->ppu_regs.mask & PPU_MASK_SHOW_BG) 
         {
-            if((current_pixel_x+scroll_offset_x) > 255)
+            if((nes_ppu->current_pixel+scroll_offset_x) > 255)
             {
                 if(nt_offset == 0x00)
                     nt_offset = 0x400;
@@ -281,7 +293,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
             nes_ppu->nes_memory->internal_v |= nt_offset;
             nes_ppu->nes_memory->internal_v &= ~0x001F;
             nes_ppu->nes_memory->internal_v &= ~0x03E0;
-            nes_ppu->nes_memory->internal_v |= (((current_pixel_y/8) << 5) & 0x3E0) + ((current_pixel_with_scroll_offset_x/8) & 0x1F);
+            nes_ppu->nes_memory->internal_v |= (((nes_ppu->current_scan_line/8) << 5) & 0x3E0) + ((current_pixel_with_scroll_offset_x/8) & 0x1F);
 
             /* calculate tile row */
             name_table_load_addr = 0x2000 | (nes_ppu->nes_memory->internal_v & 0x0FFF);
@@ -298,7 +310,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
             tile_high_bit = (pattern_high_val >> current_tile_pixel_col) & 1;
 
             /* Get attribute bits */
-            attribute_bit_quadrant = (((current_pixel_y%32)/16) << 1 ) | (((current_pixel_with_scroll_offset_x)%32)/16);
+            attribute_bit_quadrant = (((nes_ppu->current_scan_line%32)/16) << 1 ) | (((current_pixel_with_scroll_offset_x)%32)/16);
             attribute_bit_quadrant *= 2;
             attribute_table_load_addr = 0x23C0 | (nes_ppu->nes_memory->internal_v & 0x0C00) | ((nes_ppu->nes_memory->internal_v >> 4) & 0x38) | ((nes_ppu->nes_memory->internal_v >> 2) & 0x07);
             attribute_bits = ((uint8_t)ppu_memory_access(nes_ppu->nes_memory, attribute_table_load_addr, 0, ACCESS_READ_BYTE) >> attribute_bit_quadrant) & 0x3;
@@ -311,34 +323,33 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
             color_pallete_value = color_pallete_2C02[color_pallete_index];
 
             /* Draw the pixel */
-            nes_ppu->bg_bitmap[current_pixel_x + (256*current_pixel_y)] = (0xFF << 24) | 
-                                                                            (color_pallete_value.r << 16) | 
-                                                                            (color_pallete_value.g << 8) | 
-                                                                            (color_pallete_value.b);
+            if(nes_ppu->sprite_bitmap[nes_ppu->current_pixel + (256*nes_ppu->current_scan_line)] != 0)
+                //printf("%x\n", nes_ppu->sprite_bitmap[nes_ppu->current_pixel + (256*nes_ppu->current_scan_line)]);
+                nes_ppu->bg_bitmap[nes_ppu->current_pixel + (256*nes_ppu->current_scan_line)] = 
+                    nes_ppu->sprite_bitmap[nes_ppu->current_pixel + (256*nes_ppu->current_scan_line)];
+            else
+                nes_ppu->bg_bitmap[nes_ppu->current_pixel + (256*nes_ppu->current_scan_line)] = 
+                    (0xFF << 24) | (color_pallete_value.r << 16) | (color_pallete_value.g << 8) | (color_pallete_value.b);
+
+            // nes_ppu->bg_bitmap[nes_ppu->current_pixel + (256*nes_ppu->current_scan_line)] = (0xFF << 24) | 
+            //                                                                 (color_pallete_value.r << 16) | 
+            //                                                                 (color_pallete_value.g << 8) | 
+            //                                                                 (color_pallete_value.b);
         }
     }
 
     if((nes_ppu->current_scan_line == 0) && (nes_ppu->current_pixel == 0))
     {
+        //printf("%x %x\n", nes_ppu->current_scan_line, nes_ppu->current_pixel);        
         if(nes_ppu->nes_memory->ppu_regs.mask & PPU_MASK_SHOW_SPRITES)
         {
+            memset(nes_ppu->sprite_bitmap, 0, sizeof(nes_ppu->sprite_bitmap));
             uint16_t temp_pix_x_i = 0;
             uint16_t temp_pix_y_i = 0;
 
             for(temp_pix_y_i=0;temp_pix_y_i<240;temp_pix_y_i++)
             for(temp_pix_x_i=0;temp_pix_x_i<256;temp_pix_x_i++)
             {
-                uint16_t i = 0;
-                uint16_t x_index,y_index = 0;
-                uint8_t sprite_val_low = 0;
-                uint8_t sprite_val_high = 0;
-                uint16_t sprite_start_pix_x = 0;
-                uint16_t sprite_start_pix_y = 0;
-                uint8_t flip_vertical = 0;
-                uint8_t flip_horizontal = 0;
-                uint8_t sprite_x_index = 0;
-                uint8_t sprite_y_index = 0;
-
                 pattern_table_load_addr = (nes_ppu->nes_memory->ppu_regs.ctrl & PPU_CTRL_SP_PATTERN_TABLE_ADDR) ? PPU_MEM_PATTERN_TABLE1_OFFSET : PPU_MEM_PATTERN_TABLE0_OFFSET;
 
                 for(i=0;i<PPU_MEM_OAMD_SIZE;i+=4)
@@ -346,6 +357,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
                     if(temp_pix_y_i == nes_ppu->nes_memory->oam_memory[i] && temp_pix_x_i == nes_ppu->nes_memory->oam_memory[i+3])
                     {
                         pattern_table_load_addr += (nes_ppu->nes_memory->oam_memory[i+1] << 4);
+                        attribute_table_load_addr = 0x3F10 + ((nes_ppu->nes_memory->oam_memory[i+2] & 0x3) << 2);
                         //printf("Sprite %d Load addr: %x %d %d\n", i/4, pattern_table_load_addr, current_pixel_x, current_pixel_y);
                         sprite_start_pix_x = nes_ppu->nes_memory->oam_memory[i+3];
                         sprite_start_pix_y = nes_ppu->nes_memory->oam_memory[i];
@@ -368,25 +380,21 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
                                     break;
 
                                 sprite_x_index = flip_vertical ? (1 << (x_index)) : (1 << (7-x_index));
-                                if((sprite_val_low & sprite_x_index) || (sprite_val_high & sprite_x_index ))
-                                {
-                                    nes_ppu->sprite_bitmap[(sprite_start_pix_x+x_index) + (256*(sprite_start_pix_y+y_index))] = (0xFF << 24) | 
-                                                                                                                            (0xFF << 16) | 
-                                                                                                                            (0xFF << 8) | 
-                                                                                                                            (0xFF);
-                                }
+
+                                sprite_bit_low = (sprite_val_low & sprite_x_index) ? 1 : 0;
+                                sprite_bit_high = (sprite_val_high & sprite_x_index) ? 1 : 0;
+
+                                color_pallete_index = (uint8_t)ppu_memory_access(nes_ppu->nes_memory, attribute_table_load_addr + ((sprite_bit_high << 1) | sprite_bit_low ), 0, ACCESS_READ_BYTE);
+                                color_pallete_value = color_pallete_2C02[color_pallete_index];
+
+                                //printf("%x %x %x %x\n", sprite_bit_high, sprite_bit_low, color_pallete_index, attribute_table_load_addr);
+
+                                nes_ppu->sprite_bitmap[(sprite_start_pix_x+x_index) + (256*(sprite_start_pix_y+y_index))] = (0xFF << 24) | 
+                                                                                                                        (color_pallete_value.r << 16) | 
+                                                                                                                        (color_pallete_value.g << 8) | 
+                                                                                                                        (color_pallete_value.b);
                             }
                         }
-
-                        // for(j=0;j<16;j++)
-                        // {
-                        //     sprite_val = (uint8_t)ppu_memory_access(nes_ppu->nes_memory, pattern_table_load_addr + j, 0, ACCESS_READ_BYTE);
-                        //     nes_ppu->screen_bitmap[nes_ppu->nes_memory->oam_memory[i+3] + (256*current_pixel_y)] = (0xFF << 24) | 
-                        //                                                                     (color_pallete_value.r << 16) | 
-                        //                                                                     (color_pallete_value.g << 8) | 
-                        //                                                                     (color_pallete_value.b);
-                        //     //printf("match: %d x:%d y:%d byte1:%x byte2:%x spr:%x\n", i, nes_ppu->nes_memory->oam_memory[i+3], nes_ppu->nes_memory->oam_memory[i], nes_ppu->nes_memory->oam_memory[i+1], nes_ppu->nes_memory->oam_memory[i+2], sprite_val);
-                        // }
                     }
                 }
             }
