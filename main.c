@@ -145,8 +145,8 @@ int main(int argc, char *argv[])
     SDL_Window *window = SDL_CreateWindow("nes_emu",
                                           SDL_WINDOWPOS_UNDEFINED,
                                           SDL_WINDOWPOS_UNDEFINED,
-                                          256*1,
-                                          240*1,
+                                          256*3,
+                                          240*3,
                                           SDL_WINDOW_OPENGL);
     if (window == NULL)
     {
@@ -251,7 +251,7 @@ int main(int argc, char *argv[])
         //     printf("OAM: %d %x\n", i, nes_memory.oam_memory[i]);
         // }
 
-        SDL_UpdateTexture(texture, NULL, nes_ppu.sprite_bitmap, 256 * sizeof(Uint32));
+        SDL_UpdateTexture(texture, NULL, nes_ppu.bg_bitmap, 256 * sizeof(Uint32));
 
         // Randomly change the colour
         // Uint8 red = rand() % 255;
@@ -267,7 +267,7 @@ int main(int argc, char *argv[])
         lastTime = currentTime;
         SDL_RenderPresent(renderer);
 
-        memset(nes_ppu.sprite_bitmap, 0, sizeof(nes_ppu.sprite_bitmap));
+        //memset(nes_ppu.sprite_bitmap, 0, sizeof(nes_ppu.sprite_bitmap));
     }
 
     // Tidy up
