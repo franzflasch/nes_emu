@@ -213,7 +213,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
     uint16_t nt_offset = (nes_ppu->nes_memory->internal_t & (0x3 << 10)) ? 0x400 : 0;
 
     /* sprite variables */
-    uint16_t i = 0;
+    int16_t i = 0; /* NEEDS to be signed, because of counting down for loop */
     uint16_t x_index,y_index = 0;
     uint8_t sprite_val_low = 0;
     uint8_t sprite_val_high = 0;
@@ -225,18 +225,6 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
     uint8_t flip_horizontal = 0;
     uint8_t sprite_x_index = 0;
     uint8_t sprite_y_index = 0;
-
-    nes_ppu->current_pixel++;
-    if(nes_ppu->current_pixel >= 340)
-    {
-        nes_ppu->current_pixel = 0;
-        nes_ppu->current_scan_line++;
-        if(nes_ppu->current_scan_line >= 262)
-        {
-            nes_ppu->current_scan_line = 0;
-            ppu_ret_status |= PPU_STATUS_FRAME_READY;
-        }
-    }
 
     /* FIXME: This is just for testing!! sprite 0 hit has to be implemented properly! */
     if((nes_ppu->current_scan_line == 30) && (nes_ppu->current_pixel == 88))
@@ -279,7 +267,10 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
         current_tile_pixel_row = nes_ppu->current_scan_line%8;
         current_tile_pixel_col = 7-((current_pixel_with_scroll_offset_x)%8);
 
-        if(nes_ppu->nes_memory->ppu_regs.mask & PPU_MASK_SHOW_BG) 
+        if(nes_ppu->sprite_bitmap[nes_ppu->current_pixel + (256*nes_ppu->current_scan_line)] != 0)
+            nes_ppu->bg_bitmap[nes_ppu->current_pixel + (256*nes_ppu->current_scan_line)] = 
+                nes_ppu->sprite_bitmap[nes_ppu->current_pixel + (256*nes_ppu->current_scan_line)];
+        else if(nes_ppu->nes_memory->ppu_regs.mask & PPU_MASK_SHOW_BG) 
         {
             if((nes_ppu->current_pixel+scroll_offset_x) > 255)
             {
@@ -323,27 +314,17 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
             color_pallete_value = color_pallete_2C02[color_pallete_index];
 
             /* Draw the pixel */
-            if(nes_ppu->sprite_bitmap[nes_ppu->current_pixel + (256*nes_ppu->current_scan_line)] != 0)
-                //printf("%x\n", nes_ppu->sprite_bitmap[nes_ppu->current_pixel + (256*nes_ppu->current_scan_line)]);
-                nes_ppu->bg_bitmap[nes_ppu->current_pixel + (256*nes_ppu->current_scan_line)] = 
-                    nes_ppu->sprite_bitmap[nes_ppu->current_pixel + (256*nes_ppu->current_scan_line)];
-            else
-                nes_ppu->bg_bitmap[nes_ppu->current_pixel + (256*nes_ppu->current_scan_line)] = 
-                    (0xFF << 24) | (color_pallete_value.r << 16) | (color_pallete_value.g << 8) | (color_pallete_value.b);
-
-            // nes_ppu->bg_bitmap[nes_ppu->current_pixel + (256*nes_ppu->current_scan_line)] = (0xFF << 24) | 
-            //                                                                 (color_pallete_value.r << 16) | 
-            //                                                                 (color_pallete_value.g << 8) | 
-            //                                                                 (color_pallete_value.b);
+            nes_ppu->bg_bitmap[nes_ppu->current_pixel + (256*nes_ppu->current_scan_line)] = 
+                (0xFF << 24) | (color_pallete_value.r << 16) | (color_pallete_value.g << 8) | (color_pallete_value.b);
         }
     }
 
     if((nes_ppu->current_scan_line == 0) && (nes_ppu->current_pixel == 0))
     {
+        memset(nes_ppu->sprite_bitmap, 0, sizeof(nes_ppu->sprite_bitmap));
         //printf("%x %x\n", nes_ppu->current_scan_line, nes_ppu->current_pixel);        
         if(nes_ppu->nes_memory->ppu_regs.mask & PPU_MASK_SHOW_SPRITES)
         {
-            memset(nes_ppu->sprite_bitmap, 0, sizeof(nes_ppu->sprite_bitmap));
             uint16_t temp_pix_x_i = 0;
             uint16_t temp_pix_y_i = 0;
 
@@ -352,7 +333,10 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
             {
                 pattern_table_load_addr = (nes_ppu->nes_memory->ppu_regs.ctrl & PPU_CTRL_SP_PATTERN_TABLE_ADDR) ? PPU_MEM_PATTERN_TABLE1_OFFSET : PPU_MEM_PATTERN_TABLE0_OFFSET;
 
-                for(i=0;i<PPU_MEM_OAMD_SIZE;i+=4)
+                /* We are counting down here, as lower address OAMs overwrite higher address OAMs, 
+                   simple solution is to just count down. So the higher ones get overwritten.
+                 */
+                for(i=(PPU_MEM_OAMD_SIZE-4);i>=0;i-=4)
                 {
                     if(temp_pix_y_i == nes_ppu->nes_memory->oam_memory[i] && temp_pix_x_i == nes_ppu->nes_memory->oam_memory[i+3])
                     {
@@ -388,7 +372,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
                                 color_pallete_value = color_pallete_2C02[color_pallete_index];
 
                                 //printf("%x %x %x %x\n", sprite_bit_high, sprite_bit_low, color_pallete_index, attribute_table_load_addr);
-
+                                if((sprite_bit_high | sprite_bit_low) != 0)
                                 nes_ppu->sprite_bitmap[(sprite_start_pix_x+x_index) + (256*(sprite_start_pix_y+y_index))] = (0xFF << 24) | 
                                                                                                                         (color_pallete_value.r << 16) | 
                                                                                                                         (color_pallete_value.g << 8) | 
@@ -398,6 +382,18 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
                     }
                 }
             }
+        }
+    }
+
+    nes_ppu->current_pixel++;
+    if(nes_ppu->current_pixel >= 340)
+    {
+        nes_ppu->current_pixel = 0;
+        nes_ppu->current_scan_line++;
+        if(nes_ppu->current_scan_line >= 262)
+        {
+            nes_ppu->current_scan_line = 0;
+            ppu_ret_status |= PPU_STATUS_FRAME_READY;
         }
     }
 
