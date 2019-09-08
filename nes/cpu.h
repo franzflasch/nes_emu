@@ -25,7 +25,6 @@ typedef struct cpu_registers_s
 	/* Status Register 1 byte wide */
 	uint8_t P;
 
-
 } cpu_registers_t;
 
 typedef struct nes_cpu_s 

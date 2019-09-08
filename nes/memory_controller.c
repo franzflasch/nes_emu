@@ -129,14 +129,6 @@ uint16_t cpu_memory_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uin
 
     if(check_is_ppu_reg(demirrored_addr))
     {
-        // if(access_type == ACCESS_READ_BYTE)
-        // {
-        //     printf("PPU READ %x\n", addr);
-        // }
-        // else
-        // {
-        //     printf("PPU WRITE %x %x\n", addr, data);
-        // }
         return ppu_reg_access(memmap, demirrored_addr, data, access_type);
     }
     else if(check_is_controller_reg(demirrored_addr))
@@ -200,10 +192,37 @@ static uint16_t ppu_memory_address_demirror(uint16_t addr)
     }
 }
 
-static uint16_t ppu_memory_address_to_phys(uint16_t addr)
+static uint16_t ppu_memory_address_to_phys(uint16_t addr, nes_mem_td *memmap)
 {
     if(addr < PPU_MEM_NAME_TABLE_MIRRORS_OFFSET)
+    {
+        if(memmap->nt_mirroring == NT_MIRROR_HORIZONTAL)
+        {
+            /* Horizontal mirroring */
+            if((addr >= 0x2400) && (addr < 0x2800))
+            {
+                return addr - 0x400;
+            }
+            else if((addr >= 0x2C00) && (addr < 0x3000))
+            {
+                return addr - 0x400;
+            }
+        }
+
+        if(memmap->nt_mirroring == NT_MIRROR_VERTICAL)
+        {
+            /* Vertical mirroring */
+            if((addr >= 0x2800) && (addr < 0x2C00))
+            {
+                return addr - 0x800;
+            }
+            if((addr >= 0x2C00) && (addr < 0x3000))
+            {
+                return addr - 0x800;
+            }
+        }
         return addr;
+    }
     else if(addr < PPU_MEM_PALETTE_RAM_MIRRORS_OFFSET)
         return (PPU_MEM_NAME_TABLE3_OFFSET + PPU_MEM_NAME_TABLE3_SIZE + (addr % (PPU_MEM_PALETTE_RAM_SIZE)));
     else
@@ -245,7 +264,7 @@ static uint16_t (*ppu_access_funcs[ACCESS_FUNC_MAX])(nes_mem_td *memmap, uint16_
 uint16_t ppu_memory_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_t access_type)
 {
     uint16_t demirrored_addr = ppu_memory_address_demirror(addr);
-    uint16_t phys_addr = ppu_memory_address_to_phys(demirrored_addr);
+    uint16_t phys_addr = ppu_memory_address_to_phys(demirrored_addr, memmap);
 
     //printf("PPU %d addr:%x demirrored_addr:%x phys_addr:%x\n", access_type, addr, demirrored_addr, phys_addr);
 

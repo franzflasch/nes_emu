@@ -26,6 +26,9 @@ int nes_cart_load_rom(nes_cartridge_t *nes_cart, char *rom)
         nes_cart->prg_rom_size = 16 * 1024 * nes_cart->header[4];
         nes_cart->chr_rom_size = 8  * 1024 * nes_cart->header[5];
         nes_cart->prg_ram_size = 8  * 1024 * nes_cart->header[8];
+
+        /* Set mirroring */
+        nes_cart->nes_mem->nt_mirroring = (nes_cart->header[6] & (1<<0));
     }
 
     for(i=0;i<nes_cart->prg_rom_size;i++)

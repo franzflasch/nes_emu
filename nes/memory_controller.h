@@ -39,8 +39,6 @@
                           CPU_MEM_APU_REGISTER_SIZE + \
                           CPU_MEM_APU_IO_REGISTER_SIZE + \
                           CPU_MEM_CRTRDG_REGISTER_SIZE
-#define CPU_MEM_VIRT_SIZE 0x10000
-
 
 #define CPU_MEM_PPU_CTRL_REGISTER           0x2000
 #define CPU_MEM_PPU_MASK_REGISTER           0x2001
@@ -52,7 +50,6 @@
 #define CPU_MEM_PPU_DATA_REGISTER           0x2007
 #define CPU_MEM_PPU_OAMDMA_REGISTER         0x4014
 
-
 #define CPU_CONTROLLER1_REGISTER 0x4016
 #define CPU_CONTROLLER2_REGISTER 0x4017
 
@@ -61,7 +58,6 @@
 #define CPU_MEM_PRG_SIZE0     0x4000
 #define CPU_MEM_PRG_LOCATION1 0xC000
 #define CPU_MEM_PRG_SIZE1     0x4000
-
 
 
 /* PPU MEMORY */
@@ -122,7 +118,7 @@
                           PPU_MEM_NAME_TABLE2_SIZE + \
                           PPU_MEM_NAME_TABLE3_SIZE + \
                           PPU_MEM_PALETTE_RAM_SIZE // - PPU_MEM_PALETTE_INTERNAL_MIRRORS
-#define PPU_MEM_VIRT_SIZE 0x4000
+
 #define PPU_MEM_OAMD_SIZE 0x0100
 
 
@@ -136,6 +132,8 @@
 #define ACCESS_READ_BYTE  3
 #define ACCESS_FUNC_MAX   4
 
+#define NT_MIRROR_HORIZONTAL 0
+#define NT_MIRROR_VERTICAL 1
 
 typedef struct __attribute__((packed)) ppu_regs_s
 {
@@ -198,6 +196,8 @@ typedef struct nes_mem_struct
      * 0x4000−0xF00 = 0x3100
      */
     uint8_t ppu_memory[PPU_MEM_PHYS_SIZE];
+
+    uint8_t nt_mirroring;
 
     /* PPU regs shared with the CPU */
     ppu_regs_t ppu_regs;
