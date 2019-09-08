@@ -99,6 +99,8 @@ int main(int argc, char *argv[])
     static nes_mem_td nes_memory = { 0 };
 
     uint32_t cpu_clocks = 0;
+    uint32_t ppu_clocks = 0;
+    uint32_t ppu_rest_clocks = 0;
     uint32_t ppu_clock_index = 0;
     uint8_t ppu_status = 0;
 
@@ -177,27 +179,25 @@ int main(int argc, char *argv[])
         for(;;)
         {
             cpu_clocks = 0;
-            if(ppu_status & PPU_STATUS_NMI)
-                cpu_clocks += nes_cpu_nmi(&nes_cpu);
-            cpu_clocks += nes_cpu_run(&nes_cpu);
-
-            //controller_run(&nes_mem);
-
-            // ppu_start:
+            if(!ppu_rest_clocks)
+            {
+                if(ppu_status & PPU_STATUS_NMI)
+                    cpu_clocks += nes_cpu_nmi(&nes_cpu);
+                cpu_clocks += nes_cpu_run(&nes_cpu);
+            }
 
             /* the ppu runs at a 3 times higher clock rate than the cpu
             so we need to give the ppu some clocks here to catchup */
+            ppu_clocks = (cpu_clocks*3) + ppu_rest_clocks;
             ppu_status = 0;
-            for(ppu_clock_index=0;ppu_clock_index<(3*cpu_clocks);ppu_clock_index++)
+            for(ppu_clock_index=0;ppu_clock_index<ppu_clocks;ppu_clock_index++)
             {
                 ppu_status |= nes_ppu_run(&nes_ppu, nes_cpu.num_cycles);
+                if(ppu_status & PPU_STATUS_FRAME_READY) break;
+                else ppu_rest_clocks = 0;
             }
 
-            // if(ppu_status & PPU_STATUS_OAM_ACCESS)
-            // {
-            //     cpu_clocks = 514;
-            //     goto ppu_start;
-            // }
+            ppu_rest_clocks = (ppu_clocks - ppu_clock_index);
 
             nes_ppu_dump_regs(&nes_ppu);
 
@@ -251,7 +251,7 @@ int main(int argc, char *argv[])
         //     printf("OAM: %d %x\n", i, nes_memory.oam_memory[i]);
         // }
 
-        SDL_UpdateTexture(texture, NULL, nes_ppu.bg_bitmap, 256 * sizeof(Uint32));
+        SDL_UpdateTexture(texture, NULL, nes_ppu.screen_bitmap, 256 * sizeof(Uint32));
 
         // Randomly change the colour
         // Uint8 red = rand() % 255;

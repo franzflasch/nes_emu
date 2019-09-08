@@ -4,7 +4,6 @@
 #include <nes.h>
 #include <cpu.h>
 
-
 #define debug_print(fmt, ...) \
             do { if (DEBUG_CPU) printf(fmt, __VA_ARGS__); } while (0)
 
@@ -897,11 +896,5 @@ void nes_cpu_init(nes_cpu_t *nes_cpu, nes_mem_td *nes_mem)
     nes_cpu->regs.A = 0;
     nes_cpu->regs.X = 0;
     nes_cpu->regs.Y = 0;
-
-    memory_write_byte(nes_cpu, 0x4017, 0); // frame irq enabled
-    memory_write_byte(nes_cpu, 0x4015, 0); // all channels disabled
-    for(uint16_t i = 0x4017; i <= 0x400f; i++) {
-        memory_write_byte(nes_cpu, i, 0);
-    }
 }
 
