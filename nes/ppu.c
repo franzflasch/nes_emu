@@ -206,8 +206,6 @@ void nes_ppu_init(nes_ppu_t *nes_ppu, nes_mem_td *nes_memory)
     nes_ppu->nes_memory = nes_memory;
 }
 
-extern uint8_t sprite_0_hit_debug;
-
 uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
 {   
     uint8_t ppu_ret_status = 0;
