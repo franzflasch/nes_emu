@@ -13,7 +13,7 @@ I wrote this emulator for fun and because I wanted to have a portable NES emulat
 ![Alt text](pictures/ice_climber.png?raw=true "Ice Climber")
 ![Alt text](pictures/nestest.png?raw=true "Nestest")
 
-* FEATURES MISSING:  
+## Notes:  
     - PPU: Needs a general refactoring.  
     - PPU: Sprite priority needs to be implemented - reason for some minor graphical glitches in Super Mario Bros.  
     - PPU: Not sure if sprite0 hit is implemented properly.  
