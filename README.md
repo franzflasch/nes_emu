@@ -1,5 +1,5 @@
 # nes_emu  
-## This is a Nintendo Entertainment System - NES Emulator written in plain C.  
+## Nintendo Entertainment System - NES Emulator written in plain C.  
 
 I wrote this emulator for fun and because I wanted to have a portable NES emulator, which I could (theoretically) even run on a microcontroller. Altough it would be very slow, as the code is definitely not performance optimized.  
 
