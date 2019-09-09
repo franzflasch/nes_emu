@@ -120,7 +120,6 @@ int main(int argc, char *argv[])
     {
         die("ROM does not exist\n");
     }
-    nes_cart_print_rom_metadata(&nes_cart);
 
     /* Set nametable mirroring after loading the cartridge */
     //nes_ppu_memmap_set_nt_mirror(&nes_mem.ppu_mem_map);

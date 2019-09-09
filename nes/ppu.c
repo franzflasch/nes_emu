@@ -285,7 +285,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
                     {
                         pattern_table_load_addr += (nes_ppu->nes_memory->oam_memory[i+1] << 4);
                         attribute_table_load_addr = 0x3F10 + ((nes_ppu->nes_memory->oam_memory[i+2] & 0x3) << 2);
-                        //printf("Sprite %d Load addr: %x %d %d\n", i/4, pattern_table_load_addr, current_pixel_x, current_pixel_y);
+
                         sprite_start_pix_x = nes_ppu->nes_memory->oam_memory[i+3];
                         sprite_start_pix_y = nes_ppu->nes_memory->oam_memory[i];
 
@@ -300,7 +300,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
                             sprite_y_index = flip_horizontal ? (7-y_index) : y_index;
                             sprite_val_low = (uint8_t)ppu_memory_access(nes_ppu->nes_memory, pattern_table_load_addr + sprite_y_index, 0, ACCESS_READ_BYTE);
                             sprite_val_high = (uint8_t)ppu_memory_access(nes_ppu->nes_memory, pattern_table_load_addr + sprite_y_index + 8, 0, ACCESS_READ_BYTE);
-                            //printf("Sprite %d low: %x high: %x\n", i/4, sprite_val_low, sprite_val_high);
+
                             for(x_index=0;x_index<8;x_index++)
                             {
                                 if((sprite_start_pix_x+x_index) >= 256)
@@ -335,7 +335,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
 
     if((nes_ppu->current_scan_line < 240) && (nes_ppu->current_pixel < 256))
     {
-        current_tile_pixel_row = nes_ppu->current_scan_line%8;
+        current_tile_pixel_row = current_scanline_with_scroll_offset_y%8;
         current_tile_pixel_col = 7-((current_pixel_with_scroll_offset_x)%8);
 
         if(nes_ppu->nes_memory->ppu_regs.mask & PPU_MASK_SHOW_BG) 

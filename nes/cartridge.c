@@ -31,6 +31,8 @@ int nes_cart_load_rom(nes_cartridge_t *nes_cart, char *rom)
         nes_cart->nes_mem->nt_mirroring = (nes_cart->header[6] & (1<<0));
     }
 
+    nes_cart_print_rom_metadata(nes_cart);
+
     for(i=0;i<nes_cart->prg_rom_size;i++)
     {
         if(fread(&tmp, sizeof(uint8_t), 1, fp) != 1) 
