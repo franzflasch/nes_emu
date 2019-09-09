@@ -11,9 +11,6 @@
 #define debug_print(fmt, ...) \
             do { if (DEBUG_MAIN) printf(fmt, __VA_ARGS__); } while (0)
 
-
-uint8_t sprite_0_hit_debug = 1;
-
 void die (const char * format, ...)
 {
     va_list vargs;
@@ -90,12 +87,10 @@ uint8_t nes_key_state_ctrl2(uint8_t b)
 
 int main(int argc, char *argv[])
 {
-    //int i = 0;
-    //static nes_memmap_t nes_mem;
+    /* NES part */
     static nes_ppu_t nes_ppu;
     static nes_cpu_t nes_cpu;
     static nes_cartridge_t nes_cart;
-
     static nes_mem_td nes_memory = { 0 };
 
     uint32_t cpu_clocks = 0;
@@ -109,9 +104,6 @@ int main(int argc, char *argv[])
         die("Please specify rom file\n");
     }
 
-    /* init memory map */
-    //nes_memmap_init(&nes_mem);
-
     /* init cartridge */
     nes_cart_init(&nes_cart, &nes_memory);
 
@@ -120,9 +112,6 @@ int main(int argc, char *argv[])
     {
         die("ROM does not exist\n");
     }
-
-    /* Set nametable mirroring after loading the cartridge */
-    //nes_ppu_memmap_set_nt_mirror(&nes_mem.ppu_mem_map);
 
     /* init cpu */
     nes_cpu_init(&nes_cpu, &nes_memory);
@@ -133,16 +122,14 @@ int main(int argc, char *argv[])
 
 
 
-
+    /* SDL2 Initialization */
     unsigned int lastTime = 0, currentTime;
-    //Uint32 pixels[256*240] = {0};
 
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
     {
         die("Failed to initialise SDL\n");
     }
 
-    // Create a window
     SDL_Window *window = SDL_CreateWindow("nes_emu",
                                           SDL_WINDOWPOS_UNDEFINED,
                                           SDL_WINDOWPOS_UNDEFINED,
@@ -175,6 +162,7 @@ int main(int argc, char *argv[])
             }
         }
 
+        /* NES core loop */
         for(;;)
         {
             cpu_clocks = 0;
@@ -203,48 +191,29 @@ int main(int argc, char *argv[])
             if(ppu_status & PPU_STATUS_FRAME_READY) break;
         }
 
-        const Uint8* keyboard;
-        SDL_PumpEvents();
-        keyboard = SDL_GetKeyboardState(NULL);
-
-        if (keyboard[SDL_SCANCODE_P]) {
-            printf("SPRITE0 HIT is on.\n");
-            sprite_0_hit_debug = 1;
-        }
-
-        if (keyboard[SDL_SCANCODE_O]) {
-            printf("SPRITE0 HIT is off.\n");
-            sprite_0_hit_debug = 0;
-        }
-
-
+        /* Commented DEBUG code */
         // for(int i=0x0000;i<0x0FFF;i++)
         // {
         //     printf("Pattern Table 0: %x %x\n", i, (uint8_t)ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
         // }
-
         // for(int i=0x1000;i<0x1FFF;i++)
         // {
         //     printf("Pattern Table 1: %x %x\n", i, (uint8_t)ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
         // }
-
         // /* Nametable 0 contents */
         // for(int i=0x2000;i<0x23FF;i++)
         // {
         //     printf("Nametable 0: %x %x\n", i, (uint8_t)ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
         // }
-
         // /* Nametable 1 contents */
         // for(int i=0x2400;i<0x27FF;i++)
         // {
         //     printf("Nametable 1: %x %x\n", i, (uint8_t)ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
         // }
-
         // for(int i=0x3F00;i<=0x3F1F;i++)
         // {
         //     printf("PALLETE: %x %x\n", i, ppu_memory_access(&nes_memory, i, 0, ACCESS_READ_BYTE));
         // }
-
         // for(int i=0;i<256;i++)
         // {
         //     printf("OAM: %d %x\n", i, nes_memory.oam_memory[i]);
@@ -252,21 +221,13 @@ int main(int argc, char *argv[])
 
         SDL_UpdateTexture(texture, NULL, nes_ppu.screen_bitmap, 256 * sizeof(Uint32));
 
-        // Randomly change the colour
-        // Uint8 red = rand() % 255;
-        // Uint8 green = rand() % 255;
-        // Uint8 blue = rand() % 255;
-
-        // Fill the screen with the colour
-        //SDL_SetRenderDrawColor(renderer, red, green, blue, 255);
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, texture, NULL, NULL);
 
-        while ((currentTime = SDL_GetTicks()) < (lastTime + FPS_UPDATE_TIME_MS));// printf("fast enough\n");
+        /* 60 FPS framerate limit */
+        while ((currentTime = SDL_GetTicks()) < (lastTime + FPS_UPDATE_TIME_MS));
         lastTime = currentTime;
         SDL_RenderPresent(renderer);
-
-        //memset(nes_ppu.sprite_bitmap, 0, sizeof(nes_ppu.sprite_bitmap));
     }
 
     // Tidy up
