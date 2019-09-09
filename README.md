@@ -19,6 +19,7 @@ I wrote this emulator for fun and because I wanted to have a portable NES emulat
     - PPU: Not sure if sprite0 hit is implemented properly.  
     - CPU - PPU Communication and Timing are probably not correct, as most of the blargg timing tests are failing.  
     - Currently only NROM games work, some other mappers would be great.  
+    - APU: currently not implemented  
 
 ## Dependencies
 - libsdl2-dev
