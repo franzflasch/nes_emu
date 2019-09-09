@@ -388,7 +388,7 @@ uint8_t nes_ppu_run(nes_ppu_t *nes_ppu, uint32_t cpu_cycles)
             tile_high_bit = (pattern_high_val >> current_tile_pixel_col) & 1;
 
             /* Get attribute bits */
-            attribute_bit_quadrant = (((nes_ppu->current_scan_line%32)/16) << 1 ) | (((current_pixel_with_scroll_offset_x)%32)/16);
+            attribute_bit_quadrant = ( ((current_scanline_with_scroll_offset_y%32)/16) << 1 ) | ((current_pixel_with_scroll_offset_x%32)/16);
             attribute_bit_quadrant *= 2;
             attribute_table_load_addr = 0x23C0 | (nes_ppu->nes_memory->internal_v & 0x0C00) | ((nes_ppu->nes_memory->internal_v >> 4) & 0x38) | ((nes_ppu->nes_memory->internal_v >> 2) & 0x07);
             attribute_bits = ((uint8_t)ppu_memory_access(nes_ppu->nes_memory, attribute_table_load_addr, 0, ACCESS_READ_BYTE) >> attribute_bit_quadrant) & 0x3;
