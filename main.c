@@ -133,8 +133,8 @@ int main(int argc, char *argv[])
     SDL_Window *window = SDL_CreateWindow("nes_emu",
                                           SDL_WINDOWPOS_UNDEFINED,
                                           SDL_WINDOWPOS_UNDEFINED,
-                                          256*5,
-                                          240*5,
+                                          256*1,
+                                          240*1,
                                           SDL_WINDOW_OPENGL);
     if (window == NULL)
     {
