@@ -34,14 +34,14 @@ make
 ```
 
 ## Controls  
-A: A
-B: S
-Select: C
-Start: Enter
-D-Pad: Arrow keys
+A: A  
+B: S  
+Select: C  
+Start: Enter  
+D-Pad: Arrow keys  
 
 ## Porting
-Porting should be pretty easy. To run the Emulator Core you only need to do this:  
+Porting should be pretty easy. To run the emulator core you only need to do this:  
 
 ```C
 #include <nes.h>
