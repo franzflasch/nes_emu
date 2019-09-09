@@ -5,8 +5,10 @@ I wrote this emulator for fun and because I wanted to have a portable NES emulat
 
 - The CPU code is taken from https://github.com/blanboom/bEMU.git, with a lot of improvemens. Now it is instanceable and supports more unofficial opcodes.  
 - PPU code was written entirely from scratch, but could stand some refactoring.  
-- It passes a some but not all NES tests from the https://github.com/christopherpow/nes-test-roms.git repo.  
+- It passes some but not all NES tests from the https://github.com/christopherpow/nes-test-roms.git repo.  
 - It is actually able to play some NROM games like Super Mario Bros., Ice Climber, Donkey Kong, etc.  
+
+![Alt text](pictures/super_mario.png?raw=true "Super Mario Bros")
 
 * FEATURES MISSING:  
     - PPU: Needs a general refactoring.  
