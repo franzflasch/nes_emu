@@ -9,6 +9,9 @@ I wrote this emulator for fun and because I wanted to have a portable NES emulat
 - It is actually able to play some NROM games like Super Mario Bros., Ice Climber, Donkey Kong, etc.  
 
 ![Alt text](pictures/super_mario.png?raw=true "Super Mario Bros")
+![Alt text](pictures/donkey_kong.png?raw=true "Donkey Kong")
+![Alt text](pictures/ice_climber.png?raw=true "Ice Climber")
+![Alt text](pictures/nestest.png?raw=true "Nestest")
 
 * FEATURES MISSING:  
     - PPU: Needs a general refactoring.  
