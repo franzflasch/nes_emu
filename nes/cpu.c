@@ -1,7 +1,8 @@
 #include <stdio.h>
+#include <string.h>
+
 #include <nes.h>
 #include <cpu.h>
-#include <string.h>
 
 #define debug_print(fmt, ...) \
             do { if (DEBUG_CPU) printf(fmt, __VA_ARGS__); } while (0)
@@ -15,49 +16,22 @@
 #define FLAG_OVERFLOW  0x40
 #define FLAG_NEGATIVE  0x80
 
-uint8_t psg_io_read(void);
-
-//uint16_t memory_access(nes_mem_td *memmap, uint16_t addr, uint16_t data, uint8_t access_type)
-
 static uint8_t memory_read_byte(nes_cpu_t *nes_cpu, uint16_t addr) 
 {
-    /* Controller input must be immediately */
-    if(addr == CONTROLLER_PORT1_REG) return psg_io_read();
-
-    nes_cpu->memmap->last_reg_accessed = addr;
-    nes_cpu->memmap->last_reg_read_write = REG_ACCESS_READ;
-
-    /* new interface */
-    memory_access(nes_cpu->nes_mem, addr, 0, ACCESS_READ_BYTE);
-
-    return (*nes_cpu->memmap->cpu_mem_map.mem_virt[addr]); 
+    return (uint8_t)cpu_memory_access(nes_cpu->nes_mem, addr, 0, ACCESS_READ_BYTE);
 }
 
 static uint16_t memory_read_word(nes_cpu_t *nes_cpu, uint16_t addr) {
-    nes_cpu->memmap->last_reg_accessed = addr;
-    nes_cpu->memmap->last_reg_read_write = REG_ACCESS_READ;
-
-    memory_access(nes_cpu->nes_mem, addr, 0, ACCESS_READ_WORD);
-
-    return memory_read_byte(nes_cpu, addr) + (memory_read_byte(nes_cpu, addr + 1) << 8);
+    return cpu_memory_access(nes_cpu->nes_mem, addr, 0, ACCESS_READ_WORD);
 }
 
 static void memory_write_byte(nes_cpu_t *nes_cpu, uint16_t addr, uint8_t data) 
 {
-    nes_cpu->memmap->last_reg_accessed = addr;
-    nes_cpu->memmap->last_reg_read_write = REG_ACCESS_WRITE;
-    *nes_cpu->memmap->cpu_mem_map.mem_virt[addr] = data;
-
-    memory_access(nes_cpu->nes_mem, addr, data, ACCESS_WRITE_BYTE);
+    cpu_memory_access(nes_cpu->nes_mem, addr, data, ACCESS_WRITE_BYTE);
 }
 
 static void memory_write_word(nes_cpu_t *nes_cpu, uint16_t addr, uint16_t data) {
-    nes_cpu->memmap->last_reg_accessed = addr;
-    nes_cpu->memmap->last_reg_read_write = REG_ACCESS_WRITE;
-    memory_write_byte(nes_cpu, addr, data & 0xFF);
-    memory_write_byte(nes_cpu, addr + 1, data >> 8);
-
-    memory_access(nes_cpu->nes_mem, addr, data, ACCESS_WRITE_WORD);
+    cpu_memory_access(nes_cpu->nes_mem, addr, data, ACCESS_WRITE_WORD);
 }
 
 static void check_page_cross_x(nes_cpu_t *nes_cpu)
@@ -877,8 +851,7 @@ uint32_t nes_cpu_run(nes_cpu_t *nes_cpu)
         case 0xFE: cpu_addressing_absolute_x(nes_cpu);  cpu_inc(nes_cpu);  cycles += 7; break;
         case 0xFF: cpu_addressing_absolute_x(nes_cpu);  cpu_inc(nes_cpu);  cpu_sbc(nes_cpu);  cycles += 7; break;
         default:
-            printf("!!!Unknown instruction: %x\n", opcode);
-            while(1);
+            die("!!!Unknown instruction: %x\n", opcode);
             break;
     }
     cycles += nes_cpu->additional_cycles;
@@ -893,22 +866,24 @@ uint32_t nes_cpu_nmi(nes_cpu_t *nes_cpu)
     nes_cpu->regs.P |= FLAG_INTERRUPT;
     cpu_stack_push_word(nes_cpu, nes_cpu->regs.PC);
     cpu_stack_push_byte(nes_cpu, nes_cpu->regs.P);
-    nes_cpu->regs.P &= ~FLAG_UNUSED;
     nes_cpu->regs.PC = memory_read_word(nes_cpu, 0xfffa);
-
-    // FIXME: don't know how many cycles this takes. Didn't find anything about it.
-    // Assuming 4 for now, as the vbl_clear_time.nes test finishes successfully.
-    return 4;
+    return 0;
 }
 
-void nes_cpu_init(nes_cpu_t *nes_cpu, nes_memmap_t *memmap, nes_mem_td *nes_mem)
+void nes_cpu_reset(nes_cpu_t *nes_cpu) {
+    nes_cpu->regs.S  -= 3;
+    nes_cpu->regs.P |= FLAG_INTERRUPT;
+    memory_write_byte(nes_cpu, 0x4015, 0);  // APU was silenced
+    nes_cpu->regs.PC = memory_read_word(nes_cpu, 0xfffc);
+}
+
+void nes_cpu_init(nes_cpu_t *nes_cpu, nes_mem_td *nes_mem)
 {
     memset(nes_cpu, 0, sizeof(*nes_cpu));
 
     nes_cpu->num_cycles = 0;
 
     /* At first set the memory interface */
-    nes_cpu->memmap = memmap;
     nes_cpu->nes_mem = nes_mem;
 
     //nes_cpu->regs.PC = 0xC000;
